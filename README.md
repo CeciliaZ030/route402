@@ -1,120 +1,130 @@
-# Route402 — Solana devnet starter
+# Route402 — the agent economy, verified on-chain
 
-Two AI agents transacting autonomously on Solana devnet via an x402-style HTTP 402
-payment flow, with an on-chain reputation system. See `agent-economy-build-spec.md`
-for the full design rationale — this README is just the "how to actually run it" part.
+Two AI agents transact autonomously on Solana devnet using an x402-style HTTP 402
+payment flow, with an on-chain reputation system tracking every seller's completed
+and failed transactions.
 
-## What's here
+## Live demo
+
+**https://route402.onrender.com**
+
+Open it and click **"Run purchase"** — this triggers a real buyer agent paying a
+real seller agent on Solana devnet, verified by a real on-chain program, live in
+the browser. No local setup required to watch it work.
+
+> **Note:** the backend services run on Render's free tier, which sleeps after 15
+> minutes of inactivity. The first request after a period of inactivity can take
+> 10-30 seconds to respond while it wakes up — this is expected, not a bug. If the
+> button seems unresponsive on first click, give it a moment and try again.
+
+**On-chain program:** `6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt` (Solana devnet)
+View it on [Solana Explorer](https://explorer.solana.com/address/6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt?cluster=devnet).
+
+**Repo:** https://github.com/msurfx/route402
+
+---
+
+## Architecture
 
 ```
 program/            Anchor program: SellerProfile PDA + reputation logic
 backend/seller/      Express server implementing the 402 challenge + verification
-backend/buyer/        Script that pays the seller and completes Loop A
-frontend/            Plain HTML/CSS/JS UI: highway, leaderboard, expanded agent view
+backend/buyer/        Purchase logic (CLI script + a small server for the demo button)
+frontend/            Static HTML/CSS/JS: highway, leaderboard, live activity feed
 ```
 
-Everything under `backend/` has already been installed and type-checked (`tsc --noEmit`
-passes clean on both). The Anchor program has **not** been compiled — this sandbox has
-no Rust/Solana toolchain, so that step is on you, locally.
+### Core loops
 
-## Setup
+**Loop A — Payment**
+```
+Buyer agent requests service → Seller returns 402 + price/wallet
+→ Buyer signs a token transfer → Buyer retries with proof
+→ Seller verifies the transaction on-chain → Seller delivers result
+```
 
-### 1. Install the Solana + Anchor toolchain (if you don't have it)
+**Loop B — Reputation**
+```
+Successful payment settles → Seller's on-chain reputation account increments
+→ Anyone can query reputation before choosing a seller
+```
 
-Follow https://www.anchor-lang.com/docs/installation — you need `solana-cli`,
-`anchor-cli`, and Rust.
+### Deployed services
 
-### 2. Build and deploy the program
+| Service | Where | Purpose |
+|---|---|---|
+| `route402-seller` | Render (Web Service) | 402 challenge, payment verification, on-chain reputation writes |
+| `route402-buyer` | Render (Web Service) | Executes purchases; exposes `/purchase` for the demo button |
+| `route402` (frontend) | Render (Static Site) | The UI shown above |
+| Anchor program | Solana devnet | `SellerProfile` PDA, `record_payment`, `record_failure` |
+
+---
+
+## Running it locally
+
+### 1. Prerequisites
+
+- Node.js 18+
+- Rust + Solana CLI + Anchor CLI (`avm install 0.30.1 && avm use 0.30.1` — this
+  project pins Anchor 0.30.1 specifically; see the note on toolchain issues below)
+
+### 2. Clone and install
 
 ```bash
-cd program
-anchor keys sync        # replaces the placeholder program ID with a real one
-anchor build
-anchor deploy --provider.cluster devnet
+git clone https://github.com/msurfx/route402.git
+cd route402
+cd backend/seller && npm install && cd ../buyer && npm install
 ```
 
-After `anchor build`, copy the generated IDL over the placeholder one:
+### 3. Set up devnet wallets
 
 ```bash
-cp target/idl/agent_economy.json ../backend/seller/src/idl/agent_economy.json
+solana config set --url devnet
+solana-keygen new --no-bip39-passphrase -o backend/seller/seller-keypair.json
+solana-keygen new --no-bip39-passphrase -o backend/buyer/buyer-keypair.json
+solana airdrop 1 $(solana-keygen pubkey backend/seller/seller-keypair.json)
+solana airdrop 1 $(solana-keygen pubkey backend/buyer/buyer-keypair.json)
 ```
 
-The placeholder IDL in `backend/seller/src/idl/` exists only so the TypeScript
-type-checks before you've built the program — replace it, don't just add to it.
+### 4. Get test tokens
 
-Also update `PROGRAM_ID` in `backend/seller/src/anchorClient.ts` and the `programs.devnet`
-entry in `program/Anchor.toml` to match whatever `anchor keys sync` generates.
+This project uses its own custom devnet SPL token (mint
+`EKFUzCYkafhGWDArX2QVr1E4cGydnyk1R6pwP9j3ztFC`) rather than depending on an
+external faucet. If you need your own supply for testing, you'll need to be the
+mint authority — see `backend/seller/src/config.ts` for the mint address, and
+mint/transfer test tokens to your buyer wallet with the `spl-token` CLI.
 
-### 3. Create devnet keypairs and fund them
+### 5. Run all three services
 
 ```bash
-solana-keygen new -o backend/seller/seller-keypair.json
-solana-keygen new -o backend/buyer/buyer-keypair.json
-solana airdrop 2 <seller pubkey> --url devnet
-solana airdrop 2 <buyer pubkey> --url devnet
+# Terminal 1
+cd backend/seller && npm run dev
+
+# Terminal 2
+cd backend/buyer && npm run serve
+
+# Terminal 3
+cd frontend && npx http-server -p 5173
 ```
 
-Both agents also need devnet USDC. Use the Circle devnet faucet
-(https://faucet.circle.com) against the mint in `backend/seller/src/config.ts`
-(`USDC_MINT`), or mint your own test SPL token on devnet and swap the mint address
-everywhere it's referenced if you'd rather not depend on Circle's faucet.
+Open `http://localhost:5173` — it defaults to `localhost` URLs for the backend
+services when run this way.
 
-### 4. Initialize the seller's on-chain profile
+### Cloud deployment notes
 
-Before the seller can accept payments, its `SellerProfile` PDA needs to exist. Easiest
-path: write a one-off script (or use `anchor test`/a REPL) calling
-`initialize_seller` with the seller's keypair — see `program/programs/agent_economy/src/lib.rs`
-for the instruction signature. This isn't scripted here because it's a one-time setup
-step, not part of the runtime loop.
+Both backend services read their signing keypair from an environment variable
+(`SELLER_KEYPAIR_SECRET` / `BUYER_KEYPAIR_SECRET`) if set, falling back to a local
+file otherwise. This is what makes them deployable to a host like Render, where
+you can't upload a local file but can set the raw secret key array as a secure
+environment variable. **Never commit a keypair file to git** — they're excluded
+via `.gitignore` for exactly this reason.
 
-### 5. Run the seller
+## Known simplifications (by design, for a hackathon build)
 
-```bash
-cd backend/seller
-npm install   # already run in the sandbox, but do it again after cloning
-npm run dev
-```
-
-Confirm you see both the seller wallet and its USDC token account logged on startup.
-
-### 6. Run the buyer
-
-```bash
-cd backend/buyer
-npm install
-npm run buy
-```
-
-This should print the 402 challenge, send the payment, retry, and print the result.
-If it works end-to-end, Loop A is done — check the seller's terminal for the
-`record_payment` call succeeding, which is Loop B.
-
-### 7. Run the frontend
-
-Any static file server works, e.g.:
-
-```bash
-cd frontend
-npx http-server -p 5173
-```
-
-Open it in a browser. It polls `http://localhost:4021/agents` every 4 seconds — if
-you're running the seller on a different host/port, set `window.SELLER_URL` in a
-`<script>` tag before `app.js` loads in `index.html`.
-
-## What's deliberately not built yet
-
-- Only one seller profile is demonstrated — the leaderboard code supports many, but
-  you only need to `initialize_seller` for your one demo seller.
-- No wallet-adapter UI — the buyer is a script, not a browser wallet flow. Fine for a
-  hackathon demo; add wallet-adapter only if you have time left after Loop A + B work.
-- No facilitator — verification is done directly against devnet RPC in
-  `backend/seller/src/x402.ts`. See the build spec for why.
-
-## Known rough edges to be aware of
-
-- `record_payment`'s account constraints trust whoever signs as `authority` — for a
-  hackathon demo this is fine, but note it in your pitch as a known simplification
-  rather than pretending it's production-hardened.
-- Replay protection (`seenSignatures`) is in-memory and resets if the seller restarts.
-  Fine for a demo, not for anything real.
+- `record_payment`'s account constraints trust whoever signs as `authority` — a
+  known simplification, not a production-hardened trust model.
+- Replay protection for payment signatures is in-memory on the seller and resets
+  if it restarts.
+- No facilitator — payment verification is done directly against Solana devnet
+  RPC rather than through a third-party x402 facilitator service.
+- Reputation formula is deliberately simple: percentage of successful vs. failed
+  transactions, no decay or recency weighting.
