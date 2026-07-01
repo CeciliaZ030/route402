@@ -1,4 +1,4 @@
-# Agent economy — Solana devnet starter
+# Route402 — Solana devnet starter
 
 Two AI agents transacting autonomously on Solana devnet via an x402-style HTTP 402
 payment flow, with an on-chain reputation system. See `agent-economy-build-spec.md`
