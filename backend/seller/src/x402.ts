@@ -1,4 +1,4 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+import { Connection } from "@solana/web3.js";
 import { RPC_URL, SERVICE_PRICE, USDC_MINT } from "./config.js";
 
 const connection = new Connection(RPC_URL, "confirmed");
@@ -8,7 +8,7 @@ export interface PaymentRequirements {
   network: "solana-devnet";
   amount: number;
   asset: string;
-  /** The seller's USDC associated token account address, not their wallet pubkey. */
+  /** The seller's token account address, not their wallet pubkey. */
   payTo: string;
 }
 
@@ -32,12 +32,7 @@ export interface VerifyResult {
 /**
  * Verifies a claimed payment directly against Solana devnet — no facilitator.
  * Confirms: the transaction exists and succeeded, it transferred at least the
- * required USDC amount, and it paid the expected seller wallet.
- *
- * This is intentionally the simplest correct implementation, not a hardened one.
- * A production version would also guard against replay (reusing the same
- * signature twice) — for the hackathon demo, checking the signature hasn't been
- * seen before is enough; see the in-memory set in index.ts.
+ * required amount, and it paid the expected seller token account.
  */
 export async function verifyPayment(
   signature: string,
@@ -55,8 +50,6 @@ export async function verifyPayment(
     return { ok: false, reason: "transaction failed on-chain" };
   }
 
-  // Look for an SPL token transfer instruction (parsed) that matches our mint,
-  // destination wallet, and minimum amount.
   const instructions = tx.transaction.message.instructions as any[];
 
   for (const ix of instructions) {
@@ -68,14 +61,9 @@ export async function verifyPayment(
     const mint = info.mint as string | undefined;
     if (mint && mint !== USDC_MINT.toBase58()) continue;
 
-    // transferChecked gives tokenAmount.amount, plain transfer gives amount.
     const rawAmount = info.tokenAmount?.amount ?? info.amount;
     const amountPaid = Number(rawAmount);
 
-    // Destination is the token account, not the wallet directly — resolving the
-    // owning wallet from a token account requires an extra lookup. For devnet
-    // simplicity we compare against the associated token account address you
-    // pass in as sellerWallet from the frontend/backend config (see README).
     if (info.destination !== sellerTokenAccount) continue;
 
     if (amountPaid < SERVICE_PRICE) {
@@ -85,7 +73,7 @@ export async function verifyPayment(
     return { ok: true, amountPaid };
   }
 
-  return { ok: false, reason: "no matching USDC transfer found in transaction" };
+  return { ok: false, reason: "no matching token transfer found in transaction" };
 }
 
 export { connection };

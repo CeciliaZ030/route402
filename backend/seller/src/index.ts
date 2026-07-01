@@ -10,10 +10,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Seller's own signing keypair — used both to receive payment (via its ATA) and
-// to sign the record_payment/record_failure calls into the Anchor program.
-// Point SELLER_KEYPAIR_PATH at a devnet keypair file, e.g. ~/.config/solana/id.json
+// Seller's signing keypair. On a cloud host, set SELLER_KEYPAIR_SECRET to the
+// JSON array contents of your local seller-keypair.json. Locally, it just
+// reads that file directly — no environment variable needed for dev.
 const sellerAuthority = loadKeypair(
+  "SELLER_KEYPAIR_SECRET",
   process.env.SELLER_KEYPAIR_PATH ?? "./seller-keypair.json"
 );
 
@@ -106,15 +107,12 @@ app.post("/service", async (req, res) => {
     await recordPayment(sellerAuthority, result.amountPaid ?? 0);
     logEvent("reputation_update", "Recorded payment on-chain, reputation updated");
   } catch (err) {
-    // The payment already landed on-chain even if this bookkeeping call fails —
-    // log it, but still serve the result rather than making the buyer re-pay.
     console.error("record_payment failed:", err);
     logEvent("reputation_update", "Payment succeeded but on-chain record failed");
   }
 
   logEvent("deliver_result", "Sent result to buyer");
 
-  // Mocked service output — swap for whatever this seller actually does.
   return res.status(200).json({
     result: "Here is your paid response.",
     generatedAt: new Date().toISOString(),
@@ -136,5 +134,5 @@ app.get("/agents", async (_req, res) => {
 app.listen(PORT, () => {
   console.log(`Seller agent listening on http://localhost:${PORT}`);
   console.log(`Seller wallet: ${sellerAuthority.publicKey.toBase58()}`);
-  console.log(`Seller USDC token account: ${sellerTokenAccount}`);
+  console.log(`Seller token account: ${sellerTokenAccount}`);
 });
