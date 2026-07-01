@@ -10,9 +10,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Seller's signing keypair. On a cloud host, set SELLER_KEYPAIR_SECRET to the
-// JSON array contents of your local seller-keypair.json. Locally, it just
-// reads that file directly — no environment variable needed for dev.
 const sellerAuthority = loadKeypair(
   "SELLER_KEYPAIR_SECRET",
   process.env.SELLER_KEYPAIR_PATH ?? "./seller-keypair.json"
@@ -20,7 +17,6 @@ const sellerAuthority = loadKeypair(
 
 const connection = new Connection(RPC_URL, "confirmed");
 
-// Resolved once at startup — the actual token account payments land in.
 const sellerTokenAccount = (
   await getOrCreateAssociatedTokenAccount(
     connection,
@@ -30,8 +26,6 @@ const sellerTokenAccount = (
   )
 ).address.toBase58();
 
-// Replay protection: don't let the same payment signature settle twice.
-// In-memory is fine for a hackathon demo; swap for a persisted set in production.
 const seenSignatures = new Set<string>();
 
 // --- Live activity feed for the frontend ---
@@ -40,11 +34,14 @@ interface ActivityEvent {
   timestamp: string;
   step: string;
   message: string;
+  /** Solana transaction signature, if this event is tied to one — lets the
+   * frontend link straight to Solscan for on-chain proof. */
+  signature?: string;
 }
 const events: ActivityEvent[] = [];
 let eventId = 0;
-function logEvent(step: string, message: string) {
-  events.unshift({ id: eventId++, timestamp: new Date().toISOString(), step, message });
+function logEvent(step: string, message: string, signature?: string) {
+  events.unshift({ id: eventId++, timestamp: new Date().toISOString(), step, message, signature });
   if (events.length > 30) events.length = 30;
   console.log(`[${step}] ${message}`);
 }
@@ -53,16 +50,6 @@ app.get("/events", (_req, res) => {
   res.json(events);
 });
 
-/**
- * Loop A, step 1-2: client hits the service, gets a 402 with payment terms
- * unless it already attached a valid payment signature.
- *
- * Loop A, step 4-6: client retries with `paymentSignature` in the body, we
- * verify it landed on-chain, then serve the (mocked) result.
- *
- * Loop B: on a verified payment, call into the Anchor program to update
- * reputation. On a rejected payment, record_failure keeps the score honest.
- */
 app.post("/service", async (req, res) => {
   const { paymentSignature } = req.body ?? {};
 
@@ -75,17 +62,17 @@ app.post("/service", async (req, res) => {
     });
   }
 
-  logEvent("verify_payment", `Verifying signature ${paymentSignature.slice(0, 12)}...`);
+  logEvent("verify_payment", `Verifying signature ${paymentSignature.slice(0, 12)}...`, paymentSignature);
 
   if (seenSignatures.has(paymentSignature)) {
-    logEvent("verify_payment", "Rejected — signature already used");
+    logEvent("verify_payment", "Rejected — signature already used", paymentSignature);
     return res.status(409).json({ error: "payment signature already used" });
   }
 
   const result = await verifyPayment(paymentSignature, sellerTokenAccount);
 
   if (!result.ok) {
-    logEvent("verify_payment", `Failed — ${result.reason}`);
+    logEvent("verify_payment", `Failed — ${result.reason}`, paymentSignature);
     try {
       await recordFailure(sellerAuthority);
       logEvent("reputation_update", "Recorded failure on-chain");
@@ -100,18 +87,19 @@ app.post("/service", async (req, res) => {
     });
   }
 
-  logEvent("verify_payment", `Verified — ${result.amountPaid} base units received`);
+  logEvent("verify_payment", `Verified — ${result.amountPaid} base units received`, paymentSignature);
   seenSignatures.add(paymentSignature);
 
+  let reputationTxSignature: string | undefined;
   try {
-    await recordPayment(sellerAuthority, result.amountPaid ?? 0);
-    logEvent("reputation_update", "Recorded payment on-chain, reputation updated");
+    reputationTxSignature = await recordPayment(sellerAuthority, result.amountPaid ?? 0);
+    logEvent("reputation_update", "Recorded payment on-chain, reputation updated", reputationTxSignature);
   } catch (err) {
     console.error("record_payment failed:", err);
     logEvent("reputation_update", "Payment succeeded but on-chain record failed");
   }
 
-  logEvent("deliver_result", "Sent result to buyer");
+  logEvent("deliver_result", "Sent result to buyer", paymentSignature);
 
   return res.status(200).json({
     result: "Here is your paid response.",
@@ -119,7 +107,6 @@ app.post("/service", async (req, res) => {
   });
 });
 
-/** Powers the leaderboard view — reads every SellerProfile PDA the program owns. */
 app.get("/agents", async (_req, res) => {
   try {
     const profiles = await listSellerProfiles(sellerAuthority);

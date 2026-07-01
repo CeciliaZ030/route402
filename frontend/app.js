@@ -1,6 +1,7 @@
 const SELLER_URL = window.SELLER_URL || "http://localhost:4021";
 const BUYER_SERVER_URL = window.BUYER_SERVER_URL || "http://localhost:4022";
 const POLL_INTERVAL_MS = 3000;
+const SOLSCAN_CLUSTER = "devnet";
 
 const highwayEl = document.getElementById("highway");
 const activityListEl = document.getElementById("activity-list");
@@ -61,6 +62,10 @@ function spawnPacket() {
   packet.addEventListener("animationend", () => packet.remove());
 }
 
+function solscanTxUrl(signature) {
+  return `https://solscan.io/tx/${signature}?cluster=${SOLSCAN_CLUSTER}`;
+}
+
 function renderActivity(events) {
   if (!events || events.length === 0) {
     activityListEl.innerHTML = `<div class="activity-empty">No activity yet — click "Run purchase" above to see it live.</div>`;
@@ -69,12 +74,16 @@ function renderActivity(events) {
   activityListEl.innerHTML = events
     .map((e) => {
       const color = STEP_COLORS[e.step] || "var(--text-secondary)";
+      const link = e.signature
+        ? `<a class="solscan-link" href="${solscanTxUrl(e.signature)}" target="_blank" rel="noopener">View &#8599;</a>`
+        : "";
       return `
     <div class="activity-row">
       <span class="activity-time">${formatTime(e.timestamp)}</span>
       <span class="activity-dot" style="background:${color}"></span>
       <span class="activity-step" style="color:${color}">${e.step}</span>
       <span class="activity-message">${formatMessage(e.message)}</span>
+      ${link}
     </div>
   `;
     })
@@ -121,6 +130,7 @@ function showExpanded(agent) {
       <div class="pipeline-step">Verify payment</div>
       <div class="pipeline-step">Deliver result</div>
     </div>
+    <a class="solscan-link" style="display:inline-block;margin-top:1rem" href="https://solscan.io/account/${agent.pubkey}?cluster=${SOLSCAN_CLUSTER}" target="_blank" rel="noopener">View this agent's on-chain account &#8599;</a>
   `;
 }
 
@@ -170,7 +180,6 @@ function formatUsdc(baseUnits) {
   return `${(baseUnits / 1_000_000).toFixed(2)} USDC`;
 }
 
-// Rewrites raw "base units" mentions in log messages to human-readable USDC.
 function formatMessage(message) {
   return message.replace(/(\d+) base units/, (_match, amount) => formatUsdc(Number(amount)));
 }

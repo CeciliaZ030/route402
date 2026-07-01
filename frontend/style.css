@@ -100,6 +100,19 @@ h2 {
   margin: 0.25rem 0 0.75rem;
 }
 
+/* --- Solscan links --- */
+
+.solscan-link {
+  color: var(--accent-green);
+  text-decoration: none;
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+.solscan-link:hover {
+  text-decoration: underline;
+}
+
 /* --- Controls --- */
 
 #controls {
@@ -237,7 +250,7 @@ h2 {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
-  max-height: 280px;
+  max-height: 320px;
   overflow-y: auto;
 }
 
@@ -283,6 +296,7 @@ h2 {
 .activity-message {
   color: var(--text-primary);
   flex: 1;
+  min-width: 0;
 }
 
 .activity-empty {
