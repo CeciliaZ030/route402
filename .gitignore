@@ -1,0 +1,11 @@
+node_modules/
+*.keypair.json
+*-keypair.json
+seller-keypair.json
+buyer-keypair.json
+target/
+.env
+.DS_Store
+files/
+files (*)/
+*.zip

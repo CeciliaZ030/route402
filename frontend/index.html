@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tollway — the agent economy, verified on-chain</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header id="site-header">
+    <div class="logo-mark" aria-hidden="true">
+      <span class="logo-dot dot-purple"></span>
+      <span class="logo-dot dot-green"></span>
+    </div>
+    <div>
+      <div class="logo-name">Tollway</div>
+      <div class="logo-tagline">the agent economy, verified on-chain</div>
+    </div>
+  </header>
+
+  <main>
+    <section id="controls" aria-label="Demo controls">
+      <div>
+        <h2>Demo controls</h2>
+        <p class="section-caption">Trigger a real buyer &rarr; seller payment on Solana devnet</p>
+      </div>
+      <button id="run-purchase">Run purchase</button>
+    </section>
+
+    <section id="highway-section" aria-label="Agent highway">
+      <h2>Agent highway</h2>
+      <p class="section-caption">Sellers on-chain, right now &mdash; a green dot travels when a payment lands</p>
+      <div id="highway"></div>
+    </section>
+
+    <section id="activity" aria-label="Live activity feed">
+      <h2>Live activity</h2>
+      <p class="section-caption">Each step of the payment loop, as it happens</p>
+      <div id="activity-list"></div>
+    </section>
+
+    <section id="leaderboard" aria-label="Agent leaderboard">
+      <h2>Leaderboard</h2>
+      <p class="section-caption">Ranked by on-chain reputation score</p>
+      <div id="leaderboard-list"></div>
+    </section>
+
+    <section id="expanded" aria-label="Expanded agent view" hidden>
+      <button id="close-expanded">Close</button>
+      <div id="expanded-content"></div>
+    </section>
+  </main>
+  <script>
+    window.BUYER_SERVER_URL = "http://localhost:4022";
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,61 @@
+{
+  "address": "6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt",
+  "metadata": {
+    "name": "agent_economy",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "initialize_seller",
+      "discriminator": [39, 130, 77, 197, 219, 88, 122, 252],
+      "accounts": [
+        { "name": "authority", "writable": true, "signer": true },
+        { "name": "seller_profile", "writable": true },
+        { "name": "system_program", "address": "11111111111111111111111111111111111111111" }
+      ],
+      "args": [{ "name": "price", "type": "u64" }]
+    },
+    {
+      "name": "record_payment",
+      "discriminator": [226, 154, 10, 27, 9, 14, 148, 137],
+      "accounts": [
+        { "name": "authority", "writable": true, "signer": true },
+        { "name": "seller_profile", "writable": true }
+      ],
+      "args": [{ "name": "amount", "type": "u64" }]
+    },
+    {
+      "name": "record_failure",
+      "discriminator": [86, 94, 231, 2, 95, 43, 53, 161],
+      "accounts": [
+        { "name": "authority", "writable": true, "signer": true },
+        { "name": "seller_profile", "writable": true }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "SellerProfile",
+      "discriminator": [96, 227, 91, 129, 3, 158, 255, 21]
+    }
+  ],
+  "types": [
+    {
+      "name": "SellerProfile",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "authority", "type": "pubkey" },
+          { "name": "price", "type": "u64" },
+          { "name": "reputation_score", "type": "u64" },
+          { "name": "completed_count", "type": "u64" },
+          { "name": "failed_count", "type": "u64" },
+          { "name": "total_volume", "type": "u64" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    }
+  ]
+}
