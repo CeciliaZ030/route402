@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 500">
+  <rect width="1500" height="500" fill="#1c1f24"/>
+
+  <!-- Highway line motif, right two-thirds of the banner -->
+  <line x1="700" y1="250" x2="1440" y2="250" stroke="url(#grad)" stroke-width="2" opacity="0.3"/>
+  <defs>
+    <linearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#9945ff"/>
+      <stop offset="100%" stop-color="#14f195"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Nodes along the highway -->
+  <circle cx="780" cy="250" r="7" fill="#9945ff"/>
+  <circle cx="940" cy="250" r="10" fill="#2b2f36" stroke="#33373e" stroke-width="1"/>
+  <circle cx="1100" cy="250" r="7" fill="#14f195"/>
+  <circle cx="1260" cy="250" r="10" fill="#2b2f36" stroke="#33373e" stroke-width="1"/>
+  <circle cx="1400" cy="250" r="7" fill="#9945ff"/>
+
+  <!-- Logo mark -->
+  <rect x="100" y="190" width="120" height="120" rx="28" fill="#24282e" stroke="#33373e" stroke-width="1.5"/>
+  <circle cx="142" cy="250" r="22" fill="#9945ff"/>
+  <circle cx="180" cy="250" r="22" fill="#14f195"/>
+
+  <!-- Wordmark -->
+  <text x="262" y="270" font-family="DejaVu Sans" font-weight="bold" font-size="72" fill="#f5f5f7">Route402</text>
+  <text x="264" y="308" font-family="DejaVu Sans" font-size="24" fill="#8a8f98">the agent economy, verified on-chain</text>
+</svg>

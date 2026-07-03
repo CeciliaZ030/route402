@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#1c1f24"/>
+
+  <!-- Highway line motif -->
+  <line x1="80" y1="480" x2="1120" y2="480" stroke="url(#grad)" stroke-width="2" opacity="0.25"/>
+  <defs>
+    <linearGradient id="grad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#9945ff"/>
+      <stop offset="100%" stop-color="#14f195"/>
+    </linearGradient>
+  </defs>
+  <circle cx="200" cy="480" r="6" fill="#9945ff"/>
+  <circle cx="420" cy="480" r="9" fill="#2b2f36" stroke="#33373e" stroke-width="1"/>
+  <circle cx="640" cy="480" r="6" fill="#14f195"/>
+  <circle cx="860" cy="480" r="9" fill="#2b2f36" stroke="#33373e" stroke-width="1"/>
+  <circle cx="1000" cy="480" r="6" fill="#9945ff"/>
+
+  <!-- Logo mark -->
+  <rect x="80" y="120" width="110" height="110" rx="26" fill="#24282e" stroke="#33373e" stroke-width="1.5"/>
+  <circle cx="118" cy="175" r="20" fill="#9945ff"/>
+  <circle cx="154" cy="175" r="20" fill="#14f195"/>
+
+  <!-- Wordmark -->
+  <text x="220" y="195" font-family="DejaVu Sans" font-weight="bold" font-size="64" fill="#f5f5f7">Route402</text>
+
+  <!-- Tagline -->
+  <text x="82" y="290" font-family="DejaVu Sans" font-size="30" fill="#f5f5f7">the agent economy, verified on-chain</text>
+
+  <!-- Description line -->
+  <text x="82" y="340" font-family="DejaVu Sans" font-size="20" fill="#8a8f98">Agent-to-agent payments on Solana, with on-chain reputation</text>
+
+  <!-- Badge -->
+  <rect x="82" y="380" width="230" height="44" rx="22" fill="#24282e" stroke="#33373e" stroke-width="1"/>
+  <circle cx="108" cy="402" r="5" fill="#14f195"/>
+  <text x="126" y="408" font-family="DejaVu Sans" font-size="18" fill="#8a8f98">Solana devnet &#183; live demo</text>
+</svg>
