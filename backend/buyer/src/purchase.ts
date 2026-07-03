@@ -1,5 +1,11 @@
 import fs from "node:fs";
 import {
+  AnchorProvider,
+  Program,
+  Wallet,
+} from "@coral-xyz/anchor";
+import BN from "bn.js";
+import {
   Connection,
   Keypair,
   Transaction,
@@ -10,16 +16,13 @@ import {
   createTransferInstruction,
   getOrCreateAssociatedTokenAccount,
 } from "@solana/spl-token";
+import idl from "./idl/agent_economy.json" with { type: "json" };
 
 const RPC_URL = process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
 const SELLER_URL = process.env.SELLER_URL ?? "http://localhost:4021";
 const USDC_MINT = new PublicKey("EKFUzCYkafhGWDArX2QVr1E4cGydnyk1R6pwP9j3ztFC");
+const PROGRAM_ID = new PublicKey("6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt");
 
-/**
- * Same pattern as the seller: check an environment variable holding the raw
- * secret key JSON array first (for cloud hosts), fall back to a local file
- * (for local dev). See anchorClient.ts on the seller side for the original.
- */
 function loadKeypair(envVarName: string, filePath: string): Keypair {
   const fromEnv = process.env[envVarName];
   if (fromEnv) {
@@ -35,11 +38,19 @@ export interface PurchaseResult {
   message: string;
   signature?: string;
   result?: string;
+  /** Signature of the buyer's own on-chain reputation-vouching transaction —
+   * separate from the payment signature. Present only on a full success. */
+  reputationTxSignature?: string;
 }
 
 /**
- * Runs the full Loop A buyer flow once: request -> 402 -> pay -> retry -> result.
- * Shared by the CLI script (src/index.ts) and the demo-trigger server (src/server.ts).
+ * Runs the full Loop A + Loop B buyer flow once.
+ *
+ * Loop B changed from the original design: the buyer now submits the
+ * record_payment call itself, signed with its own key, rather than trusting
+ * the seller to self-report. See the security note in the Anchor program's
+ * lib.rs for why — a seller self-attesting its own success is trivially
+ * gameable; an independent buyer's signature is a real (if imperfect) check.
  */
 export async function runPurchase(): Promise<PurchaseResult> {
   const connection = new Connection(RPC_URL, "confirmed");
@@ -60,6 +71,7 @@ export async function runPurchase(): Promise<PurchaseResult> {
   }
 
   const { paymentRequirements } = await firstResponse.json();
+  const sellerAuthority = new PublicKey(paymentRequirements.sellerAuthority);
 
   const sellerTokenAccount = new PublicKey(paymentRequirements.payTo);
   const buyerTokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -89,8 +101,40 @@ export async function runPurchase(): Promise<PurchaseResult> {
 
   const body = await secondResponse.json();
 
-  if (secondResponse.status === 200) {
-    return { success: true, message: "Purchase complete", signature, result: body.result };
+  if (secondResponse.status !== 200) {
+    return { success: false, message: `Purchase failed (${secondResponse.status})`, signature };
   }
-  return { success: false, message: `Purchase failed (${secondResponse.status})`, signature };
+
+  // Loop B: the buyer itself now vouches for the seller on-chain.
+  let reputationTxSignature: string | undefined;
+  try {
+    const provider = new AnchorProvider(connection, new Wallet(buyer), { commitment: "confirmed" });
+    const program = new Program(idl as any, provider) as any;
+
+    const [sellerProfile] = PublicKey.findProgramAddressSync(
+      [Buffer.from("seller"), sellerAuthority.toBuffer()],
+      PROGRAM_ID
+    );
+
+    reputationTxSignature = await program.methods
+      .recordPayment(new BN(body.amountPaid ?? paymentRequirements.amount))
+      .accounts({
+        buyer: buyer.publicKey,
+        seller: sellerAuthority,
+        sellerProfile,
+      })
+      .rpc();
+  } catch (err) {
+    // The purchase itself already succeeded even if this vouching step fails —
+    // don't fail the whole purchase over it, but do surface it clearly.
+    console.error("Failed to record reputation on-chain:", err);
+  }
+
+  return {
+    success: true,
+    message: "Purchase complete",
+    signature,
+    result: body.result,
+    reputationTxSignature,
+  };
 }

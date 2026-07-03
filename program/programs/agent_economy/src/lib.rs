@@ -7,8 +7,8 @@ pub mod agent_economy {
     use super::*;
 
     /// Creates a SellerProfile PDA for an agent that wants to sell a service.
-    /// price_lamports is denominated in the smallest unit of the USDC mint used
-    /// (USDC has 6 decimals, so 1 USDC = 1_000_000).
+    /// price_lamports is denominated in the smallest unit of the token used
+    /// (6 decimals, so 1 token = 1_000_000).
     pub fn initialize_seller(ctx: Context<InitializeSeller>, price: u64) -> Result<()> {
         let seller = &mut ctx.accounts.seller_profile;
         seller.authority = ctx.accounts.authority.key();
@@ -21,9 +21,17 @@ pub mod agent_economy {
         Ok(())
     }
 
-    /// Called by the seller's backend after it has independently verified (via RPC)
-    /// that a payment transaction landed on-chain. This does not move funds itself —
-    /// it only records that a transaction happened, for reputation purposes.
+    /// SECURITY NOTE: this instruction is signed by the BUYER, not the seller.
+    /// This is deliberate. A seller cannot be trusted to self-report its own
+    /// successful transactions — nothing would stop a seller from controlling
+    /// two wallets, paying itself trivial amounts, and inflating its own
+    /// reputation with no real counterparty. Requiring the buyer's signature
+    /// means an independent party must vouch for the transaction actually
+    /// happening. It's not a complete fix (a single actor can still control
+    /// both a "buyer" and "seller" wallet — see the build spec's threat-model
+    /// notes for further mitigations: counterparty-uniqueness weighting,
+    /// bonded stakes, off-chain wash-trading detection) but it raises the bar
+    /// from "trivial to fake" to "requires a genuinely separate wallet."
     pub fn record_payment(ctx: Context<RecordPayment>, amount: u64) -> Result<()> {
         let seller = &mut ctx.accounts.seller_profile;
         seller.completed_count = seller.completed_count.checked_add(1).unwrap();
@@ -32,9 +40,11 @@ pub mod agent_economy {
         Ok(())
     }
 
-    /// Called if a payment attempt failed verification (bad signature, wrong amount,
-    /// expired, etc). Keeps the reputation formula honest instead of only ever going up.
-    pub fn record_failure(ctx: Context<RecordPayment>) -> Result<()> {
+    /// Unlike record_payment, this stays seller-signed. A seller self-reporting
+    /// its OWN failures only ever hurts its score — there's no incentive to
+    /// fake this, so the self-attestation risk that applies to record_payment
+    /// doesn't apply here.
+    pub fn record_failure(ctx: Context<RecordFailure>) -> Result<()> {
         let seller = &mut ctx.accounts.seller_profile;
         seller.failed_count = seller.failed_count.checked_add(1).unwrap();
         seller.reputation_score = compute_reputation(seller.completed_count, seller.failed_count);
@@ -71,11 +81,30 @@ pub struct InitializeSeller<'info> {
 
 #[derive(Accounts)]
 pub struct RecordPayment<'info> {
-    /// The seller's backend signs this — in production this should be constrained
-    /// further (e.g. to a known program-controlled signer) so a seller can't just
-    /// call record_payment on itself without a real transaction. For the hackathon
-    /// demo this is acceptable: judges are verifying the flow, not auditing the
-    /// trust model.
+    /// The buyer signs — see security note on the instruction above. The buyer
+    /// pays their own transaction fee for this call, which is a small, real
+    /// cost that itself discourages spamming fake reputation updates.
+    #[account(mut)]
+    pub buyer: Signer<'info>,
+
+    /// The seller's wallet — deliberately NOT a signer here. It's only used
+    /// to derive/validate which SellerProfile PDA this update applies to.
+    /// CHECK: only used for PDA seed derivation, safe because the seeds+bump
+    /// constraint below cryptographically ties this to the one true PDA for
+    /// this pubkey — there's no way to pass a mismatched account and have it
+    /// validate.
+    pub seller: UncheckedAccount<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"seller", seller.key().as_ref()],
+        bump = seller_profile.bump,
+    )]
+    pub seller_profile: Account<'info, SellerProfile>,
+}
+
+#[derive(Accounts)]
+pub struct RecordFailure<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
 

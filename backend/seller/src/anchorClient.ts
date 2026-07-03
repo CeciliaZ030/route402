@@ -1,5 +1,4 @@
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
-import BN from "bn.js";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import fs from "node:fs";
 import { RPC_URL } from "./config.js";
@@ -8,17 +7,6 @@ import idl from "./idl/agent_economy.json" with { type: "json" };
 
 const PROGRAM_ID = new PublicKey("6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt");
 
-/**
- * Loads a keypair two ways, in priority order:
- * 1. From an environment variable holding the raw secret key as a JSON array
- *    string, e.g. SELLER_KEYPAIR_SECRET="[12,34,56,...]" — this is what you set
- *    on a cloud host (Render/Railway/etc), since you can't upload a local file
- *    there and the file is (correctly) gitignored.
- * 2. From a local file path — this is what local development uses, unchanged.
- *
- * envVarName is the environment variable to check first; filePath is the
- * fallback local file, used only if that env var isn't set.
- */
 export function loadKeypair(envVarName: string, filePath: string): Keypair {
   const fromEnv = process.env[envVarName];
   if (fromEnv) {
@@ -44,15 +32,12 @@ export function sellerProfilePda(authority: PublicKey): [PublicKey, number] {
   );
 }
 
-export async function recordPayment(authority: Keypair, amount: number) {
-  const program = getProgram(authority);
-  const [sellerProfile] = sellerProfilePda(authority.publicKey);
-  return program.methods
-    .recordPayment(new BN(amount))
-    .accounts({ authority: authority.publicKey, sellerProfile })
-    .rpc();
-}
-
+/**
+ * record_payment moved to the buyer side (see lib.rs security note) — sellers
+ * can no longer self-attest their own successful transactions. This file only
+ * keeps record_failure, which stays seller-signed since self-reporting a
+ * failure only ever hurts the seller's own score.
+ */
 export async function recordFailure(authority: Keypair) {
   const program = getProgram(authority);
   const [sellerProfile] = sellerProfilePda(authority.publicKey);

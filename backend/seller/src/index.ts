@@ -4,7 +4,7 @@ import { Connection } from "@solana/web3.js";
 import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import { PORT, RPC_URL, USDC_MINT } from "./config.js";
 import { buildPaymentRequirements, verifyPayment } from "./x402.js";
-import { loadKeypair, recordPayment, recordFailure, listSellerProfiles } from "./anchorClient.js";
+import { loadKeypair, recordFailure, listSellerProfiles } from "./anchorClient.js";
 
 const app = express();
 app.use(cors());
@@ -28,14 +28,11 @@ const sellerTokenAccount = (
 
 const seenSignatures = new Set<string>();
 
-// --- Live activity feed for the frontend ---
 interface ActivityEvent {
   id: number;
   timestamp: string;
   step: string;
   message: string;
-  /** Solana transaction signature, if this event is tied to one — lets the
-   * frontend link straight to Solscan for on-chain proof. */
   signature?: string;
 }
 const events: ActivityEvent[] = [];
@@ -50,15 +47,22 @@ app.get("/events", (_req, res) => {
   res.json(events);
 });
 
+/**
+ * Loop A, steps 1-6, unchanged. Loop B changed: the seller no longer calls
+ * record_payment itself (see security note in the Anchor program — that
+ * instruction is now buyer-signed). The seller just tells the buyer it's
+ * their turn to submit the reputation update, via sellerAuthority in the
+ * response body.
+ */
 app.post("/service", async (req, res) => {
   const { paymentSignature } = req.body ?? {};
 
   if (!paymentSignature) {
     logEvent("receive_request", "Buyer requested service, no payment attached");
-    logEvent("402_challenge", `Sent 402 — price ${buildPaymentRequirements(sellerTokenAccount).amount} base units`);
+    logEvent("402_challenge", `Sent 402 — price ${buildPaymentRequirements(sellerTokenAccount, sellerAuthority.publicKey.toBase58()).amount} base units`);
     return res.status(402).json({
       error: "payment required",
-      paymentRequirements: buildPaymentRequirements(sellerTokenAccount),
+      paymentRequirements: buildPaymentRequirements(sellerTokenAccount, sellerAuthority.publicKey.toBase58()),
     });
   }
 
@@ -75,7 +79,7 @@ app.post("/service", async (req, res) => {
     logEvent("verify_payment", `Failed — ${result.reason}`, paymentSignature);
     try {
       await recordFailure(sellerAuthority);
-      logEvent("reputation_update", "Recorded failure on-chain");
+      logEvent("reputation_update", "Recorded failure on-chain (seller self-reported)");
     } catch (err) {
       console.error("record_failure failed:", err);
       logEvent("reputation_update", "Failed to record failure on-chain");
@@ -83,27 +87,20 @@ app.post("/service", async (req, res) => {
     return res.status(402).json({
       error: "payment verification failed",
       reason: result.reason,
-      paymentRequirements: buildPaymentRequirements(sellerTokenAccount),
+      paymentRequirements: buildPaymentRequirements(sellerTokenAccount, sellerAuthority.publicKey.toBase58()),
     });
   }
 
   logEvent("verify_payment", `Verified — ${result.amountPaid} base units received`, paymentSignature);
   seenSignatures.add(paymentSignature);
-
-  let reputationTxSignature: string | undefined;
-  try {
-    reputationTxSignature = await recordPayment(sellerAuthority, result.amountPaid ?? 0);
-    logEvent("reputation_update", "Recorded payment on-chain, reputation updated", reputationTxSignature);
-  } catch (err) {
-    console.error("record_payment failed:", err);
-    logEvent("reputation_update", "Payment succeeded but on-chain record failed");
-  }
-
-  logEvent("deliver_result", "Sent result to buyer", paymentSignature);
+  logEvent("deliver_result", "Sent result to buyer — buyer will record reputation on-chain", paymentSignature);
 
   return res.status(200).json({
     result: "Here is your paid response.",
     generatedAt: new Date().toISOString(),
+    // The buyer needs these two to submit record_payment itself.
+    sellerAuthority: sellerAuthority.publicKey.toBase58(),
+    amountPaid: result.amountPaid,
   });
 });
 

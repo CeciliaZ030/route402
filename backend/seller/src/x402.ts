@@ -1,4 +1,4 @@
-import { Connection } from "@solana/web3.js";
+import { Connection, Keypair } from "@solana/web3.js";
 import { RPC_URL, SERVICE_PRICE, USDC_MINT } from "./config.js";
 
 const connection = new Connection(RPC_URL, "confirmed");
@@ -8,18 +8,26 @@ export interface PaymentRequirements {
   network: "solana-devnet";
   amount: number;
   asset: string;
-  /** The seller's token account address, not their wallet pubkey. */
+  /** The seller's token account address — where the payment itself goes. */
   payTo: string;
+  /** The seller's wallet pubkey (not token account) — the buyer needs this
+   * to derive the correct SellerProfile PDA when it submits the reputation
+   * update itself. See the security note in the Anchor program: record_payment
+   * is buyer-signed, so the buyer needs to know which seller it's vouching for. */
+  sellerAuthority: string;
 }
 
-/** Builds the payload that goes in the 402 response body. */
-export function buildPaymentRequirements(sellerTokenAccount: string): PaymentRequirements {
+export function buildPaymentRequirements(
+  sellerTokenAccount: string,
+  sellerAuthority: string
+): PaymentRequirements {
   return {
     scheme: "exact",
     network: "solana-devnet",
     amount: SERVICE_PRICE,
     asset: USDC_MINT.toBase58(),
     payTo: sellerTokenAccount,
+    sellerAuthority,
   };
 }
 
@@ -29,11 +37,6 @@ export interface VerifyResult {
   amountPaid?: number;
 }
 
-/**
- * Verifies a claimed payment directly against Solana devnet — no facilitator.
- * Confirms: the transaction exists and succeeded, it transferred at least the
- * required amount, and it paid the expected seller token account.
- */
 export async function verifyPayment(
   signature: string,
   sellerTokenAccount: string

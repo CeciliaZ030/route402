@@ -2,7 +2,7 @@
   "address": "6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt",
   "metadata": {
     "name": "agent_economy",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "spec": "0.1.0"
   },
   "instructions": [
@@ -20,7 +20,8 @@
       "name": "record_payment",
       "discriminator": [226, 154, 10, 27, 9, 14, 148, 137],
       "accounts": [
-        { "name": "authority", "writable": true, "signer": true },
+        { "name": "buyer", "writable": true, "signer": true },
+        { "name": "seller", "signer": false },
         { "name": "seller_profile", "writable": true }
       ],
       "args": [{ "name": "amount", "type": "u64" }]
