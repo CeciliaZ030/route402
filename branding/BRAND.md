@@ -1,7 +1,7 @@
-# Route402 — brand reference
+# Routex402 — brand reference
 
 ## Name & tagline
-**Route402** — "the agent economy, verified on-chain"
+**Routex402** — "the agent economy, verified on-chain"
 
 The name references HTTP 402 (Payment Required), the status code the x402 protocol
 is built on — the same mechanism this project's payment flow uses.

@@ -3,6 +3,15 @@ const BUYER_SERVER_URL = window.BUYER_SERVER_URL || "http://localhost:4022";
 const POLL_INTERVAL_MS = 3000;
 const SOLSCAN_CLUSTER = "devnet";
 
+// Off-chain display names for known demo agents — purely cosmetic, the program
+// itself has no concept of names, only pubkeys. Update this after running
+// scripts/seed-agent.ts for the two new demo agents with their real pubkeys.
+const AGENT_NAMES = {
+  "6115DzbrgB9tb2NpDXJPLkBDLWELyAJLjNKVXdESmkUJ": "Agent Alpha",
+  "8zYhyiWTqaNBUrEydonZo8HVhncfGyxTHagQvF3mAXkp": "Agent Beta",
+  "2tkowRGCjsQqDFcEdz21FDaAtKwFaG244H3Z429JCncV": "Agent Gamma",
+};
+
 const highwayEl = document.getElementById("highway");
 const activityListEl = document.getElementById("activity-list");
 const leaderboardListEl = document.getElementById("leaderboard-list");
@@ -32,17 +41,39 @@ async function fetchJson(baseUrl, path, options) {
   }
 }
 
+/**
+ * Tier badge based on reputation score AND completed count — a seller needs
+ * both a high success rate AND a real amount of history to earn a high tier.
+ * This stops a seller with 1 lucky completed transaction (100% reputation)
+ * from outranking a seller with 20 completed transactions at 90%.
+ */
+function getTier(agent) {
+  if (agent.completedCount >= 15 && agent.reputationScore >= 90) {
+    return { label: "Elite", color: "var(--accent-purple)" };
+  }
+  if (agent.completedCount >= 5 && agent.reputationScore >= 70) {
+    return { label: "Trusted", color: "var(--accent-green)" };
+  }
+  return { label: "New", color: "var(--text-muted)" };
+}
+
+function displayName(pubkey) {
+  return AGENT_NAMES[pubkey] || shortAddr(pubkey);
+}
+
 function renderHighway(agents) {
   highwayEl.innerHTML = "";
   const spacing = 100 / (agents.length + 1);
 
   agents.forEach((agent, i) => {
+    const tier = getTier(agent);
     const node = document.createElement("div");
     node.className = "agent-node";
     node.style.left = `${spacing * (i + 1)}%`;
     node.innerHTML = `
       <div class="badge">${initials(agent.pubkey)}</div>
-      <div class="name">${shortAddr(agent.pubkey)}</div>
+      <div class="name">${displayName(agent.pubkey)}</div>
+      <div class="node-tier" style="color:${tier.color}">${tier.label}</div>
     `;
     node.addEventListener("click", () => showExpanded(agent));
     highwayEl.appendChild(node);
@@ -93,14 +124,16 @@ function renderActivity(events) {
 function renderLeaderboard(agents) {
   leaderboardListEl.innerHTML = "";
   const sorted = [...agents].sort((a, b) => b.reputationScore - a.reputationScore);
+  const medals = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
 
   sorted.forEach((agent, i) => {
+    const tier = getTier(agent);
     const row = document.createElement("div");
     row.className = "lb-row";
     row.innerHTML = `
-      <span class="lb-rank">${i + 1}</span>
+      <span class="lb-rank">${medals[i] || i + 1}</span>
       <div style="flex:1">
-        <div class="lb-name">${shortAddr(agent.pubkey)}</div>
+        <div class="lb-name">${displayName(agent.pubkey)} <span class="lb-tier" style="color:${tier.color}">${tier.label}</span></div>
         <div class="lb-sub">${agent.completedCount} completed &middot; ${formatUsdc(agent.totalVolume)} volume</div>
       </div>
       <div style="text-align:right">
@@ -114,9 +147,10 @@ function renderLeaderboard(agents) {
 }
 
 function showExpanded(agent) {
+  const tier = getTier(agent);
   expandedEl.hidden = false;
   expandedContentEl.innerHTML = `
-    <div style="font-size:15px;font-weight:500">${shortAddr(agent.pubkey)}</div>
+    <div style="font-size:15px;font-weight:500">${displayName(agent.pubkey)} <span class="lb-tier" style="color:${tier.color}">${tier.label}</span></div>
     <div class="stat-grid">
       <div class="stat-card"><div class="label">Reputation</div><div class="value">${agent.reputationScore}</div></div>
       <div class="stat-card"><div class="label">Completed</div><div class="value">${agent.completedCount}</div></div>

@@ -1,4 +1,4 @@
-# Route402 — the agent economy, verified on-chain
+# Routex402 — the agent economy, verified on-chain
 
 Two AI agents transact autonomously on Solana devnet using an x402-style HTTP 402
 payment flow, with an on-chain reputation system tracking every seller's completed
