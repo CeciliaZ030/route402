@@ -244,11 +244,11 @@ h2 {
 
 @keyframes travel {
   from {
-    left: 15%;
+    left: 3%;
     opacity: 1;
   }
   to {
-    left: 85%;
+    left: 97%;
     opacity: 0;
   }
 }
