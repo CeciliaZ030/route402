@@ -469,3 +469,40 @@ h2 {
     box-shadow: 0 0 0 0 rgba(20, 241, 149, 0);
   }
 }
+
+/* Mobile: the activity row's fixed-width columns don't fit on narrow
+   screens, causing the message text and Solscan link to overlap. Stack
+   the row into two lines instead: [time · dot · step] on top,
+   [message] then [link] below, each on their own full-width line. */
+@media (max-width: 640px) {
+  .activity-row {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 4px;
+  }
+
+  .activity-time {
+    width: auto;
+    order: 1;
+  }
+
+  .activity-dot {
+    order: 2;
+    margin-top: 5px;
+  }
+
+  .activity-step {
+    width: auto;
+    order: 3;
+  }
+
+  .activity-message {
+    flex-basis: 100%;
+    order: 4;
+  }
+
+  .activity-row .solscan-link {
+    flex-basis: 100%;
+    order: 5;
+  }
+}
