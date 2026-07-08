@@ -97,26 +97,33 @@ export async function ensureSellerProfile(
   const connection = program.provider.connection;
   const info = await connection.getAccountInfo(pda);
 
+  if (info) {
+    // Account exists but failed to deserialize with the current IDL — it's
+    // almost certainly the old, pre-migration layout. Do NOT auto-migrate:
+    // close+init would reset completed_count/reputation_score to zero, and
+    // doing that silently on every server boot risks destroying real demo
+    // history. Migration (if ever wanted) should be a deliberate, one-off,
+    // manually-run action — never automatic. Leave the account as-is.
+    console.warn(
+      "WARNING: SellerProfile exists but uses an old account layout " +
+      "(deserialization failed). Not auto-migrating to avoid resetting " +
+      "real history. Run a manual migration script if this seller needs " +
+      "updating to the new layout."
+    );
+    return "exists";
+  }
+
+  // Genuinely missing — safe to create fresh.
   const initIx = await program.methods
     .initializeSeller(new BN(price))
     .accounts({ authority: authority.publicKey, sellerProfile: pda })
     .instruction();
-
-  const tx = new Transaction();
-
-  if (info) {
-    const closeIx = await program.methods
-      .closeSeller()
-      .accounts({ authority: authority.publicKey, sellerProfile: pda })
-      .instruction();
-    tx.add(closeIx);
-  }
-  tx.add(initIx);
+  const tx = new Transaction().add(initIx);
 
   await sendAndConfirmTransaction(connection, tx, [authority], {
     commitment: "confirmed",
   });
-  return info ? "migrated" : "created";
+  return "created";
 }
 
 /**
