@@ -8,8 +8,8 @@ const SOLSCAN_CLUSTER = "devnet";
 // scripts/seed-agent.ts for the two new demo agents with their real pubkeys.
 const AGENT_NAMES = {
   "6115DzbrgB9tb2NpDXJPLkBDLWELyAJLjNKVXdESmkUJ": "Agent Alpha",
-  "8zYhyiWTqaNBUrEydonZo8HVhncfGyxTHagQvF3mAXkp": "Agent Beta",
-  "2tkowRGCjsQqDFcEdz21FDaAtKwFaG244H3Z429JCncV": "Agent Gamma",
+  "5hWGqa3VMCawnVTBvf3YVsCPkgpJxAd9QVeehisBUTq5": "Agent Beta",
+  "EXzH2oDbHb6a6cAWPdU9Mp42xbKDg8a5gZswtT5Z83d9": "Agent Gamma",
 };
 
 const highwayEl = document.getElementById("highway");

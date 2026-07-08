@@ -1,5 +1,12 @@
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  Transaction,
+  sendAndConfirmTransaction,
+} from "@solana/web3.js";
 import fs from "node:fs";
 import { RPC_URL } from "./config.js";
 
@@ -32,6 +39,86 @@ export function sellerProfilePda(authority: PublicKey): [PublicKey, number] {
   );
 }
 
+export function configPda(): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync([Buffer.from("config")], PROGRAM_ID);
+}
+
+export interface ProtocolConfigInfo {
+  admin: string;
+  treasuryTokenAccount: string;
+  protocolFeeBps: number;
+}
+
+/** Reads the singleton ProtocolConfig, or null if it hasn't been initialized. */
+export async function getProtocolConfig(
+  authority: Keypair
+): Promise<ProtocolConfigInfo | null> {
+  const program = getProgram(authority);
+  const [pda] = configPda();
+  try {
+    const config = await (program.account as any).protocolConfig.fetch(pda);
+    return {
+      admin: config.admin.toBase58(),
+      treasuryTokenAccount: config.treasuryTokenAccount.toBase58(),
+      protocolFeeBps: Number(config.protocolFeeBps),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Makes sure this seller's on-chain profile exists AND uses the current
+ * account layout, creating or migrating it if not.
+ *
+ * The 2026-07 program upgrade grew SellerProfile (distinct_buyers,
+ * weighted_completed, last_updated), so profiles created before it fail to
+ * deserialize. The only migration path is close + re-initialize (the program's
+ * close_seller instruction exists for exactly this), which RESETS the
+ * profile's counters — acceptable for devnet, logged loudly so nobody is
+ * surprised. Both instructions run in one transaction so the profile can't be
+ * left closed-but-not-recreated.
+ */
+export async function ensureSellerProfile(
+  authority: Keypair,
+  price: number
+): Promise<"exists" | "created" | "migrated"> {
+  const program = getProgram(authority);
+  const [pda] = sellerProfilePda(authority.publicKey);
+  const accounts = program.account as any;
+
+  try {
+    await accounts.sellerProfile.fetch(pda);
+    return "exists";
+  } catch {
+    // Fall through: either the account is missing or it's the old layout.
+  }
+
+  const connection = program.provider.connection;
+  const info = await connection.getAccountInfo(pda);
+
+  const initIx = await program.methods
+    .initializeSeller(new BN(price))
+    .accounts({ authority: authority.publicKey, sellerProfile: pda })
+    .instruction();
+
+  const tx = new Transaction();
+
+  if (info) {
+    const closeIx = await program.methods
+      .closeSeller()
+      .accounts({ authority: authority.publicKey, sellerProfile: pda })
+      .instruction();
+    tx.add(closeIx);
+  }
+  tx.add(initIx);
+
+  await sendAndConfirmTransaction(connection, tx, [authority], {
+    commitment: "confirmed",
+  });
+  return info ? "migrated" : "created";
+}
+
 /**
  * record_payment moved to the buyer side (see lib.rs security note) — sellers
  * can no longer self-attest their own successful transactions. This file only
@@ -54,18 +141,36 @@ export async function getSellerProfile(authority: Keypair, wallet: PublicKey) {
   return accounts.sellerProfile.fetch(pda);
 }
 
-/** Fetches every SellerProfile account the program owns — powers the leaderboard. */
+/**
+ * Fetches every SellerProfile account the program owns — powers the leaderboard.
+ * Decodes account-by-account and skips any that fail (pre-upgrade-layout
+ * profiles still exist on devnet and are undecodable by design) rather than
+ * letting one stale account take down the whole leaderboard.
+ */
 export async function listSellerProfiles(authority: Keypair) {
   const program = getProgram(authority);
-  const accounts = program.account as any;
-  const all = await accounts.sellerProfile.all();
-  return all.map((a: any) => ({
-    pubkey: a.publicKey.toBase58(),
-    authority: a.account.authority.toBase58(),
-    price: Number(a.account.price),
-    reputationScore: Number(a.account.reputationScore),
-    completedCount: Number(a.account.completedCount),
-    failedCount: Number(a.account.failedCount),
-    totalVolume: Number(a.account.totalVolume),
-  }));
+  const connection = program.provider.connection;
+  const raw = await connection.getProgramAccounts(PROGRAM_ID);
+
+  const profiles = [];
+  for (const { pubkey, account } of raw) {
+    try {
+      const decoded = program.coder.accounts.decode("sellerProfile", account.data);
+      profiles.push({
+        pubkey: pubkey.toBase58(),
+        authority: decoded.authority.toBase58(),
+        price: Number(decoded.price),
+        reputationScore: Number(decoded.reputationScore),
+        completedCount: Number(decoded.completedCount),
+        failedCount: Number(decoded.failedCount),
+        totalVolume: Number(decoded.totalVolume),
+        distinctBuyers: Number(decoded.distinctBuyers),
+        lastUpdated: Number(decoded.lastUpdated),
+      });
+    } catch {
+      // Not a (current-layout) SellerProfile — old-layout profile, a
+      // ProtocolConfig, or a BuyerSellerLink. Skip.
+    }
+  }
+  return profiles;
 }

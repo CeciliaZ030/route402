@@ -6,21 +6,35 @@ const connection = new Connection(RPC_URL, "confirmed");
 export interface PaymentRequirements {
   scheme: "exact";
   network: "solana-devnet";
+  /** What the seller must RECEIVE, in base units — the service's net price. */
   amount: number;
   asset: string;
   /** The seller's token account address — where the payment itself goes. */
   payTo: string;
   /** The seller's wallet pubkey (not token account) — the buyer needs this
-   * to derive the correct SellerProfile PDA when it submits the reputation
-   * update itself. See the security note in the Anchor program: record_payment
-   * is buyer-signed, so the buyer needs to know which seller it's vouching for. */
+   * to derive the correct SellerProfile PDA for the pay_and_record call. */
   sellerAuthority: string;
+  /** Protocol fee in basis points, taken out of the gross amount by the
+   * on-chain program. Surfaced here for transparency — the buyer can see
+   * exactly what the protocol takes before paying. */
+  protocolFeeBps: number;
+  /** What the buyer should send via pay_and_record so that the seller nets
+   * `amount` after the program's fee split. */
+  grossAmount: number;
 }
 
 export function buildPaymentRequirements(
   sellerTokenAccount: string,
-  sellerAuthority: string
+  sellerAuthority: string,
+  protocolFeeBps: number
 ): PaymentRequirements {
+  // Gross-up so the seller still nets the full price after the fee split:
+  // program computes fee = floor(gross * bps / 10000), seller gets the rest.
+  const grossAmount =
+    protocolFeeBps > 0
+      ? Math.ceil((SERVICE_PRICE * 10_000) / (10_000 - protocolFeeBps))
+      : SERVICE_PRICE;
+
   return {
     scheme: "exact",
     network: "solana-devnet",
@@ -28,6 +42,8 @@ export function buildPaymentRequirements(
     asset: USDC_MINT.toBase58(),
     payTo: sellerTokenAccount,
     sellerAuthority,
+    protocolFeeBps,
+    grossAmount,
   };
 }
 
@@ -53,7 +69,13 @@ export async function verifyPayment(
     return { ok: false, reason: "transaction failed on-chain" };
   }
 
-  const instructions = tx.transaction.message.instructions as any[];
+  // Scan top-level AND inner instructions: with pay_and_record the token
+  // transfer happens via CPI inside the program instruction, so it only
+  // appears in meta.innerInstructions. Legacy plain transfers stay top-level.
+  const instructions = [
+    ...(tx.transaction.message.instructions as any[]),
+    ...(tx.meta?.innerInstructions ?? []).flatMap((inner: any) => inner.instructions),
+  ];
 
   for (const ix of instructions) {
     if (ix.program !== "spl-token") continue;

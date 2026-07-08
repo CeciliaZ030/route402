@@ -8,12 +8,10 @@ import BN from "bn.js";
 import {
   Connection,
   Keypair,
-  Transaction,
-  sendAndConfirmTransaction,
   PublicKey,
 } from "@solana/web3.js";
 import {
-  createTransferInstruction,
+  TOKEN_PROGRAM_ID,
   getOrCreateAssociatedTokenAccount,
 } from "@solana/spl-token";
 import idl from "./idl/agent_economy.json" with { type: "json" };
@@ -38,19 +36,25 @@ export interface PurchaseResult {
   message: string;
   signature?: string;
   result?: string;
-  /** Signature of the buyer's own on-chain reputation-vouching transaction —
-   * separate from the payment signature. Present only on a full success. */
+  /** With pay_and_record, payment and reputation are ONE atomic transaction,
+   * so this is the same signature as `signature`. Kept as a separate field so
+   * existing consumers (frontend, monitoring) don't break. */
   reputationTxSignature?: string;
+  /** Fee taken by the protocol, in base units — surfaced for transparency. */
+  protocolFee?: number;
 }
 
 /**
- * Runs the full Loop A + Loop B buyer flow once.
+ * Runs the full buyer flow once.
  *
- * Loop B changed from the original design: the buyer now submits the
- * record_payment call itself, signed with its own key, rather than trusting
- * the seller to self-report. See the security note in the Anchor program's
- * lib.rs for why — a seller self-attesting its own success is trivially
- * gameable; an independent buyer's signature is a real (if imperfect) check.
+ * As of the 2026-07 program upgrade, payment and reputation are no longer two
+ * separate steps (raw SPL transfer, then a separate record_payment call whose
+ * amount was never verified against the transfer). The buyer now calls the
+ * program's pay_and_record instruction: the token transfer happens via CPI
+ * inside the instruction — split between the seller and the protocol treasury
+ * per the on-chain ProtocolConfig fee — and the seller's reputation is updated
+ * in the same transaction, only after the transfer succeeds. One signature,
+ * atomically both loops.
  */
 export async function runPurchase(): Promise<PurchaseResult> {
   const connection = new Connection(RPC_URL, "confirmed");
@@ -62,7 +66,7 @@ export async function runPurchase(): Promise<PurchaseResult> {
   const firstResponse = await fetch(`${SELLER_URL}/service`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ task: "network-report" }),
   });
 
   if (firstResponse.status !== 402) {
@@ -72,8 +76,40 @@ export async function runPurchase(): Promise<PurchaseResult> {
 
   const { paymentRequirements } = await firstResponse.json();
   const sellerAuthority = new PublicKey(paymentRequirements.sellerAuthority);
-
   const sellerTokenAccount = new PublicKey(paymentRequirements.payTo);
+
+  const provider = new AnchorProvider(connection, new Wallet(buyer), {
+    commitment: "confirmed",
+  });
+  const program = new Program(idl as any, provider) as any;
+
+  // The fee rate and treasury destination live in the on-chain ProtocolConfig —
+  // read them from the chain rather than trusting the seller's word for it.
+  const [configPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("config")],
+    PROGRAM_ID
+  );
+  let config;
+  try {
+    config = await program.account.protocolConfig.fetch(configPda);
+  } catch {
+    return {
+      success: false,
+      message:
+        "ProtocolConfig not initialized on-chain — run initialize_config before purchases can settle",
+    };
+  }
+  const feeBps = Number(config.protocolFeeBps);
+
+  // Gross-up so the seller nets the quoted price after the program's fee
+  // split. Prefer the seller's own grossAmount quote when present (newer
+  // sellers include it); fall back to computing it from on-chain fee bps.
+  const netPrice = Number(paymentRequirements.amount);
+  const grossAmount =
+    paymentRequirements.grossAmount ??
+    (feeBps > 0 ? Math.ceil((netPrice * 10_000) / (10_000 - feeBps)) : netPrice);
+  const protocolFee = Math.floor((grossAmount * feeBps) / 10_000);
+
   const buyerTokenAccount = await getOrCreateAssociatedTokenAccount(
     connection,
     buyer,
@@ -81,22 +117,45 @@ export async function runPurchase(): Promise<PurchaseResult> {
     buyer.publicKey
   );
 
-  const transferIx = createTransferInstruction(
-    buyerTokenAccount.address,
-    sellerTokenAccount,
-    buyer.publicKey,
-    paymentRequirements.amount
+  const [sellerProfile] = PublicKey.findProgramAddressSync(
+    [Buffer.from("seller"), sellerAuthority.toBuffer()],
+    PROGRAM_ID
+  );
+  const [buyerSellerLink] = PublicKey.findProgramAddressSync(
+    [Buffer.from("link"), sellerAuthority.toBuffer(), buyer.publicKey.toBuffer()],
+    PROGRAM_ID
   );
 
-  const tx = new Transaction().add(transferIx);
-  const signature = await sendAndConfirmTransaction(connection, tx, [buyer], {
-    commitment: "confirmed",
-  });
+  // One atomic transaction: transfer to seller + fee to treasury (both via
+  // CPI) + reputation update. If any part fails, nothing happened.
+  let signature: string;
+  try {
+    signature = await program.methods
+      .payAndRecord(new BN(grossAmount))
+      .accounts({
+        buyer: buyer.publicKey,
+        seller: sellerAuthority,
+        sellerProfile,
+        buyerSellerLink,
+        config: configPda,
+        mint: USDC_MINT,
+        buyerTokenAccount: buyerTokenAccount.address,
+        sellerTokenAccount,
+        treasuryTokenAccount: config.treasuryTokenAccount,
+        tokenProgram: TOKEN_PROGRAM_ID,
+      })
+      .rpc();
+  } catch (err: any) {
+    return {
+      success: false,
+      message: `pay_and_record failed: ${err?.message ?? String(err)}`,
+    };
+  }
 
   const secondResponse = await fetch(`${SELLER_URL}/service`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ paymentSignature: signature }),
+    body: JSON.stringify({ paymentSignature: signature, task: "network-report" }),
   });
 
   const body = await secondResponse.json();
@@ -105,36 +164,12 @@ export async function runPurchase(): Promise<PurchaseResult> {
     return { success: false, message: `Purchase failed (${secondResponse.status})`, signature };
   }
 
-  // Loop B: the buyer itself now vouches for the seller on-chain.
-  let reputationTxSignature: string | undefined;
-  try {
-    const provider = new AnchorProvider(connection, new Wallet(buyer), { commitment: "confirmed" });
-    const program = new Program(idl as any, provider) as any;
-
-    const [sellerProfile] = PublicKey.findProgramAddressSync(
-      [Buffer.from("seller"), sellerAuthority.toBuffer()],
-      PROGRAM_ID
-    );
-
-    reputationTxSignature = await program.methods
-      .recordPayment(new BN(body.amountPaid ?? paymentRequirements.amount))
-      .accounts({
-        buyer: buyer.publicKey,
-        seller: sellerAuthority,
-        sellerProfile,
-      })
-      .rpc();
-  } catch (err) {
-    // The purchase itself already succeeded even if this vouching step fails —
-    // don't fail the whole purchase over it, but do surface it clearly.
-    console.error("Failed to record reputation on-chain:", err);
-  }
-
   return {
     success: true,
-    message: "Purchase complete",
+    message: "Purchase complete — payment and reputation settled atomically",
     signature,
     result: body.result,
-    reputationTxSignature,
+    reputationTxSignature: signature,
+    protocolFee,
   };
 }

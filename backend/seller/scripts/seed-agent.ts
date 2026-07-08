@@ -1,18 +1,17 @@
 /**
- * Seeds one demo seller agent with real on-chain history: creates its
- * SellerProfile PDA if it doesn't exist, then submits real record_payment
- * (buyer-signed, same as the real flow) and record_failure calls to build up
- * a believable transaction history for the demo highway/leaderboard.
+ * Seeds one demo seller agent with synthetic on-chain history: creates its
+ * SellerProfile PDA if it doesn't exist, then submits record_payment
+ * (ADMIN-signed — since the 2026-07 upgrade that instruction is admin-gated,
+ * existing precisely so that unverified history can only be written by the
+ * protocol admin for demo seeding) and record_failure calls.
  *
- * This does NOT run as a live service — it's a one-time script. The resulting
- * on-chain accounts and history are completely real (same program, same
- * instructions a live agent would use), just not backed by a 24/7 backend.
+ * This does NOT run as a live service — it's a one-time script, and history
+ * written this way is synthetic by definition: no payment backs it. Live
+ * reputation flows exclusively through pay_and_record.
  *
- * Usage:
- *   npx tsx scripts/seed-agent.ts <keypair-path> <price> <completed> <failed>
- *
- * Example:
- *   npx tsx scripts/seed-agent.ts ./seller-beta-keypair.json 20000 12 2
+ * Usage (admin keypair from ADMIN_KEYPAIR_SECRET / ADMIN_KEYPAIR_PATH /
+ * default solana CLI wallet):
+ *   npx tsx scripts/seed-agent.ts <seller-keypair-path> <price> <completed> <failed>
  */
 import { AnchorProvider, Program, Wallet } from "@coral-xyz/anchor";
 import BN from "bn.js";
@@ -33,7 +32,6 @@ if (!keypairPath) {
 const PRICE = Number(priceArg ?? 10000);
 const TARGET_COMPLETED = Number(completedArg ?? 10);
 const TARGET_FAILED = Number(failedArg ?? 1);
-const BUYER_KEYPAIR_PATH = process.env.BUYER_KEYPAIR_PATH ?? "../buyer/buyer-keypair.json";
 
 function loadOrCreateKeypair(path: string): Keypair {
   if (fs.existsSync(path)) {
@@ -44,6 +42,19 @@ function loadOrCreateKeypair(path: string): Keypair {
   fs.writeFileSync(path, JSON.stringify(Array.from(kp.secretKey)));
   console.log(`Generated new keypair, saved to ${path}`);
   return kp;
+}
+
+function loadAdminKeypair(): Keypair {
+  const fromEnv = process.env.ADMIN_KEYPAIR_SECRET;
+  if (fromEnv) {
+    return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(fromEnv)));
+  }
+  const keyPath =
+    process.env.ADMIN_KEYPAIR_PATH ??
+    `${process.env.HOME}/.config/solana/id.json`;
+  return Keypair.fromSecretKey(
+    Uint8Array.from(JSON.parse(fs.readFileSync(keyPath, "utf-8")))
+  );
 }
 
 async function airdropIfLow(connection: Connection, pubkey: PublicKey, label: string) {
@@ -62,13 +73,12 @@ function sleep(ms) {
 async function main() {
   const connection = new Connection(RPC_URL, "confirmed");
   const seller = loadOrCreateKeypair(keypairPath);
-  const buyer = loadOrCreateKeypair(BUYER_KEYPAIR_PATH);
+  const admin = loadAdminKeypair();
 
   console.log(`Seller pubkey: ${seller.publicKey.toBase58()}`);
-  console.log(`Buyer pubkey (vouching): ${buyer.publicKey.toBase58()}`);
+  console.log(`Admin pubkey (seeding): ${admin.publicKey.toBase58()}`);
 
   await airdropIfLow(connection, seller.publicKey, "seller");
-  await airdropIfLow(connection, buyer.publicKey, "buyer");
 
   const sellerProvider = new AnchorProvider(connection, new Wallet(seller), { commitment: "confirmed" });
   const sellerProgram = new Program(idl as any, sellerProvider) as any;
@@ -89,14 +99,19 @@ async function main() {
     console.log("Seller profile already exists — will add more history to it.");
   }
 
-  const buyerProvider = new AnchorProvider(connection, new Wallet(buyer), { commitment: "confirmed" });
-  const buyerProgram = new Program(idl as any, buyerProvider) as any;
+  const adminProvider = new AnchorProvider(connection, new Wallet(admin), { commitment: "confirmed" });
+  const adminProgram = new Program(idl as any, adminProvider) as any;
+
+  const [configPda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("config")],
+    PROGRAM_ID
+  );
 
   for (let i = 0; i < TARGET_COMPLETED; i++) {
     process.stdout.write(`Recording completed payment ${i + 1}/${TARGET_COMPLETED}...\r`);
-    await buyerProgram.methods
+    await adminProgram.methods
       .recordPayment(new BN(PRICE))
-      .accounts({ buyer: buyer.publicKey, seller: seller.publicKey, sellerProfile })
+      .accounts({ admin: admin.publicKey, config: configPda, seller: seller.publicKey, sellerProfile })
       .rpc();
     await sleep(600);
   }
