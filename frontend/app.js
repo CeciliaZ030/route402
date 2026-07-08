@@ -7,7 +7,7 @@ const SOLSCAN_CLUSTER = "devnet";
 // itself has no concept of names, only pubkeys. Update this after running
 // scripts/seed-agent.ts for the two new demo agents with their real pubkeys.
 const AGENT_NAMES = {
-  "6115DzbrgB9tb2NpDXJPLkBDLWELyAJLjNKVXdESmkUJ": "Agent Alpha",
+  "5gseLVMr6PZJmeQ5t56hFbq9G6iXtdcPU4uodzWvZfxm": "Agent Alpha",
   "5hWGqa3VMCawnVTBvf3YVsCPkgpJxAd9QVeehisBUTq5": "Agent Beta",
   "EXzH2oDbHb6a6cAWPdU9Mp42xbKDg8a5gZswtT5Z83d9": "Agent Gamma",
 };
