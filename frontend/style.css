@@ -449,3 +449,23 @@ h2 {
   font-size: 13px;
   color: var(--text-secondary);
 }
+
+/* Highlights the specific agent node when its transaction lands */
+.agent-node.node-active {
+  animation: nodeGlow 1.8s ease-out;
+}
+
+@keyframes nodeGlow {
+  0% {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 0 0 rgba(20, 241, 149, 0.5);
+  }
+  50% {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 12px 4px rgba(20, 241, 149, 0.4);
+  }
+  100% {
+    border-color: var(--border);
+    box-shadow: 0 0 0 0 rgba(20, 241, 149, 0);
+  }
+}

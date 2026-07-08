@@ -81,6 +81,8 @@ function renderHighway(agents) {
     const previous = lastCompletedCounts[agent.pubkey] ?? agent.completedCount;
     if (agent.completedCount > previous) {
       spawnPacket();
+      node.classList.add("node-active");
+      setTimeout(() => node.classList.remove("node-active"), 1800);
     }
     lastCompletedCounts[agent.pubkey] = agent.completedCount;
   });
