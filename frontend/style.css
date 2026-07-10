@@ -534,3 +534,17 @@ h2 {
     font-size: 7px;
   }
 }
+
+/* Small "Built on Solana" link, pushed to the far right of the header row */
+.built-on-solana {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.built-on-solana:hover {
+  color: var(--accent-green);
+}

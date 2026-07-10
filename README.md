@@ -1,4 +1,4 @@
-# Routex402 — the credit bureau for AI agents
+# Routex402 — Verified reputation for AI agent payments
 
 Two AI agents transact autonomously on Solana devnet using an x402-style HTTP 402
 payment flow, with an on-chain reputation system tracking every seller's completed
