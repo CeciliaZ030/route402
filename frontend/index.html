@@ -77,3 +77,25 @@
   <script src="app.js"></script>
 </body>
 </html>
+
+<div class="deck-viewer-box" style="max-width: 960px; margin: 40px auto; padding: 0 20px; text-align: left;">
+    <label for="deckSelector" style="font-weight: bold; margin-right: 10px; font-family: sans-serif; display: inline-block;">View Presentation:</label>
+    <select id="deckSelector" onchange="switchPresentation()" style="padding: 8px 12px; font-size: 15px; border-radius: 6px; border: 1px solid #ccc; background: #fff; cursor: pointer;">
+        <option value="">-- Select a Document --</option>
+        <option value="YOUR_EMBED_URL_HERE">Routex402 Pitch Deck</option>
+    </select>
+    
+    <div class="deck-frame-wrap" style="position: relative; width: 100%; padding-top: 56.25%; height: 0; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #fafafa; margin-top: 15px;">
+        <iframe id="deckFrame" src="" allowfullscreen="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;"></iframe>
+    </div>
+</div>
+
+<script>
+    function switchPresentation() {
+        var dropdown = document.getElementById('deckSelector');
+        var iframe = document.getElementById('deckFrame');
+        if (dropdown && iframe) {
+            iframe.src = dropdown.value;
+        }
+    }
+</script>
