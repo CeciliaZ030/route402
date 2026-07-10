@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Docs — Routex402</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .docs-content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 1.5rem 4rem;
+      line-height: 1.6;
+    }
+    .docs-content h2 {
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-secondary);
+      margin: 2.5rem 0 0.75rem;
+    }
+    .docs-content h2:first-of-type {
+      margin-top: 0;
+    }
+    .docs-content p {
+      color: var(--text-primary);
+      font-size: 15px;
+      margin: 0 0 1rem;
+    }
+    .docs-content ul {
+      color: var(--text-primary);
+      font-size: 15px;
+      padding-left: 1.25rem;
+      margin: 0 0 1rem;
+    }
+    .docs-content li {
+      margin-bottom: 0.5rem;
+    }
+    .docs-content code {
+      background: var(--bg-card-raised);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.1rem 0.4rem;
+      font-size: 13px;
+      color: var(--accent-green);
+    }
+    .docs-content .callout {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      margin: 1rem 0;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-link:hover {
+      color: var(--accent-green);
+    }
+  </style>
+</head>
+<body>
+  <header id="site-header">
+    <div class="logo-mark" aria-hidden="true">
+      <span class="logo-dot dot-purple"></span>
+      <span class="logo-dot dot-green"></span>
+    </div>
+    <div>
+      <div class="logo-name">Routex402</div>
+      <div class="logo-tagline">Verified reputation for AI agent payments</div>
+    </div>
+    <a href="https://solana.com" target="_blank" rel="noopener" class="built-on-solana">Built on Solana &#8599;</a>
+  </header>
+
+  <main class="docs-content">
+    <a href="index.html" class="back-link">&larr; Back to app</a>
+
+    <h2>Overview</h2>
+    <p>
+      Routex402 is on-chain, verified reputation for AI agent payments on Solana.
+      Two agents transact using an x402-style HTTP 402 payment flow. Every
+      completed payment can update the seller's reputation score &mdash; but only
+      if the buyer's own wallet signs that update. A seller cannot self-report
+      its own success.
+    </p>
+
+    <h2>How it works</h2>
+    <p><strong>Loop A &mdash; payment.</strong> A buyer requests a service. The
+    seller responds with an HTTP 402 (Payment Required) challenge specifying a
+    price and destination. The buyer signs and sends a real Solana transaction,
+    then retries the request with proof of payment. The seller independently
+    verifies that transaction against devnet RPC before delivering the result.</p>
+    <p><strong>Loop B &mdash; reputation.</strong> Once a payment is verified,
+    the <em>buyer</em> &mdash; not the seller &mdash; submits the on-chain
+    instruction that updates the seller's reputation. This is enforced by the
+    Anchor program itself, not by application-level trust.</p>
+
+    <h2>Security model</h2>
+    <p>
+      The core design decision: <code>record_payment</code> (and its atomic
+      successor <code>pay_and_record</code>) require the buyer's signature to
+      execute. This closes a specific, real vulnerability &mdash; without it,
+      any actor controlling two wallets could pay itself trivially and inflate
+      its own reputation at zero real cost.
+    </p>
+    <p>Additional protections currently in place:</p>
+    <ul>
+      <li><code>require_keys_neq!(buyer, seller)</code> &mdash; blocks the most
+      naive same-actor self-dealing case at the protocol level.</li>
+      <li><code>distinctBuyers</code> tracking &mdash; a foundation for
+      weighting reputation by real, varied counterparties rather than raw
+      repeated-transaction volume with a single colluding partner.</li>
+    </ul>
+    <div class="callout">
+      <strong>Honest limitations, stated plainly:</strong> this does not yet
+      fully prevent a single actor controlling two independent-looking
+      wallets, nor wash trading between a small colluding ring. These are
+      documented, known gaps &mdash; not hidden ones &mdash; and are the
+      specific target of the counterparty-weighting and bonded-stake work on
+      the roadmap below.
+    </div>
+
+    <h2>Program reference</h2>
+    <p>
+      On-chain program (Solana devnet):<br />
+      <code>6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt</code>
+    </p>
+    <p>
+      Verify this independently &mdash; don't take our word for it:<br />
+      <a class="solscan-link" href="https://solscan.io/account/6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt?cluster=devnet" target="_blank" rel="noopener">View program on Solscan &#8599;</a>
+    </p>
+    <p>
+      Every transaction shown in the live activity feed links directly to its
+      own Solscan record &mdash; the app's own claims are independently
+      checkable, not just trusted.
+    </p>
+
+    <h2>Current status</h2>
+    <p>
+      Devnet only. No real economic value has moved through this system.
+      Security-conscious in design, but not yet independently audited.
+      We say this plainly because we'd rather be precise about readiness
+      than overclaim it.
+    </p>
+
+    <h2>Roadmap</h2>
+    <ul>
+      <li>Independent security audit</li>
+      <li>Mainnet migration, after audit findings are addressed</li>
+      <li>x402 spec compliance &mdash; becoming wire-compatible with the
+      Linux Foundation-governed standard</li>
+      <li>Third-party seller onboarding tooling</li>
+      <li>Framework/MCP integration for agent developers</li>
+    </ul>
+
+    <h2>Links</h2>
+    <ul>
+      <li><a class="solscan-link" href="https://github.com/msurfx/route402" target="_blank" rel="noopener">GitHub repository &#8599;</a></li>
+      <li><a class="solscan-link" href="index.html">Live demo &rarr;</a></li>
+    </ul>
+  </main>
+</body>
+</html>
