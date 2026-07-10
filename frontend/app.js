@@ -236,3 +236,17 @@ async function tick() {
 
 tick();
 setInterval(tick, POLL_INTERVAL_MS);
+
+const menuToggle = document.getElementById("menu-toggle");
+const menuDropdown = document.getElementById("menu-dropdown");
+if (menuToggle && menuDropdown) {
+  menuToggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    menuDropdown.hidden = !menuDropdown.hidden;
+  });
+  document.addEventListener("click", (e) => {
+    if (!menuDropdown.hidden && !menuDropdown.contains(e.target) && e.target !== menuToggle) {
+      menuDropdown.hidden = true;
+    }
+  });
+}

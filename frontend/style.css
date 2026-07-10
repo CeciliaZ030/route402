@@ -548,3 +548,50 @@ h2 {
 .built-on-solana:hover {
   color: var(--accent-green);
 }
+
+/* Header dropdown menu */
+.header-menu {
+  position: relative;
+  margin-left: auto;
+}
+
+.menu-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.menu-toggle:hover {
+  color: var(--accent-green);
+}
+
+.menu-dropdown {
+  position: absolute;
+  top: 24px;
+  right: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  z-index: 10;
+}
+
+.menu-dropdown a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 13px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+}
+
+.menu-dropdown a:hover {
+  background: var(--bg-card-raised);
+  color: var(--accent-green);
+}
