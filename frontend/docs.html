@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Docs — Routex402</title>
+  <title>Docs: Routex402</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="stylesheet" href="style.css" />
   <style>
@@ -86,19 +86,19 @@
     <p>
       Routex402 is on-chain, verified reputation for AI agent payments on Solana.
       Two agents transact using an x402-style HTTP 402 payment flow. Every
-      completed payment can update the seller's reputation score &mdash; but only
+      completed payment can update the seller's reputation score, but only
       if the buyer's own wallet signs that update. A seller cannot self-report
       its own success.
     </p>
 
     <h2>How it works</h2>
-    <p><strong>Loop A &mdash; payment.</strong> A buyer requests a service. The
+    <p><strong>Loop A: payment.</strong> A buyer requests a service. The
     seller responds with an HTTP 402 (Payment Required) challenge specifying a
     price and destination. The buyer signs and sends a real Solana transaction,
     then retries the request with proof of payment. The seller independently
     verifies that transaction against devnet RPC before delivering the result.</p>
-    <p><strong>Loop B &mdash; reputation.</strong> Once a payment is verified,
-    the <em>buyer</em> &mdash; not the seller &mdash; submits the on-chain
+    <p><strong>Loop B: reputation.</strong> Once a payment is verified,
+    the <em>buyer</em>, not the seller, submits the on-chain
     instruction that updates the seller's reputation. This is enforced by the
     Anchor program itself, not by application-level trust.</p>
 
@@ -106,15 +106,15 @@
     <p>
       The core design decision: <code>record_payment</code> (and its atomic
       successor <code>pay_and_record</code>) require the buyer's signature to
-      execute. This closes a specific, real vulnerability &mdash; without it,
+      execute. This closes a specific, real vulnerability. Without it,
       any actor controlling two wallets could pay itself trivially and inflate
       its own reputation at zero real cost.
     </p>
     <p>Additional protections currently in place:</p>
     <ul>
-      <li><code>require_keys_neq!(buyer, seller)</code> &mdash; blocks the most
+      <li><code>require_keys_neq!(buyer, seller)</code>, which blocks the most
       naive same-actor self-dealing case at the protocol level.</li>
-      <li><code>distinctBuyers</code> tracking &mdash; a foundation for
+      <li><code>distinctBuyers</code> tracking, a foundation for
       weighting reputation by real, varied counterparties rather than raw
       repeated-transaction volume with a single colluding partner.</li>
     </ul>
@@ -122,7 +122,7 @@
       <strong>Honest limitations, stated plainly:</strong> this does not yet
       fully prevent a single actor controlling two independent-looking
       wallets, nor wash trading between a small colluding ring. These are
-      documented, known gaps &mdash; not hidden ones &mdash; and are the
+      documented, known gaps, not hidden ones, and are the
       specific target of the counterparty-weighting and bonded-stake work on
       the roadmap below.
     </div>
@@ -133,12 +133,12 @@
       <code>6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt</code>
     </p>
     <p>
-      Verify this independently &mdash; don't take our word for it:<br />
+      Verify this independently. Don't take our word for it:<br />
       <a class="solscan-link" href="https://solscan.io/account/6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt?cluster=devnet" target="_blank" rel="noopener">View program on Solscan &#8599;</a>
     </p>
     <p>
       Every transaction shown in the live activity feed links directly to its
-      own Solscan record &mdash; the app's own claims are independently
+      own Solscan record. The app's own claims are independently
       checkable, not just trusted.
     </p>
 
@@ -154,7 +154,7 @@
     <ul>
       <li>Independent security audit</li>
       <li>Mainnet migration, after audit findings are addressed</li>
-      <li>x402 spec compliance &mdash; becoming wire-compatible with the
+      <li>x402 spec compliance, becoming wire-compatible with the
       Linux Foundation-governed standard</li>
       <li>Third-party seller onboarding tooling</li>
       <li>Framework/MCP integration for agent developers</li>

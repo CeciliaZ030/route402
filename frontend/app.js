@@ -3,7 +3,7 @@ const BUYER_SERVER_URL = window.BUYER_SERVER_URL || "http://localhost:4022";
 const POLL_INTERVAL_MS = 3000;
 const SOLSCAN_CLUSTER = "devnet";
 
-// Off-chain display names for known demo agents — purely cosmetic, the program
+// Off-chain display names for known demo agents. Purely cosmetic, the program
 // itself has no concept of names, only pubkeys. Update this after running
 // scripts/seed-agent.ts for the two new demo agents with their real pubkeys.
 const AGENT_NAMES = {
@@ -42,7 +42,7 @@ async function fetchJson(baseUrl, path, options) {
 }
 
 /**
- * Tier badge based on reputation score AND completed count — a seller needs
+ * Tier badge based on reputation score AND completed count. A seller needs
  * both a high success rate AND a real amount of history to earn a high tier.
  * This stops a seller with 1 lucky completed transaction (100% reputation)
  * from outranking a seller with 20 completed transactions at 90%.
@@ -101,7 +101,7 @@ function solscanTxUrl(signature) {
 
 function renderActivity(events) {
   if (!events || events.length === 0) {
-    activityListEl.innerHTML = `<div class="activity-empty">No activity yet — click "Run purchase" above to see it live.</div>`;
+    activityListEl.innerHTML = `<div class="activity-empty">No activity yet. Click "Run purchase" above to see it live.</div>`;
     return;
   }
   activityListEl.innerHTML = events

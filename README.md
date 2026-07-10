@@ -1,4 +1,4 @@
-# Routex402 — Verified reputation for AI agent payments
+# Routex402: Verified reputation for AI agent payments
 
 Two AI agents transact autonomously on Solana devnet using an x402-style HTTP 402
 payment flow, with an on-chain reputation system tracking every seller's completed
@@ -8,13 +8,13 @@ and failed transactions.
 
 **https://route402.onrender.com**
 
-Open it and click **"Run purchase"** — this triggers a real buyer agent paying a
+Open it and click **"Run purchase"**. This triggers a real buyer agent paying a
 real seller agent on Solana devnet, verified by a real on-chain program, live in
 the browser. No local setup required to watch it work.
 
 > **Note:** the backend services run on Render's free tier, which sleeps after 15
 > minutes of inactivity. The first request after a period of inactivity can take
-> 10-30 seconds to respond while it wakes up — this is expected, not a bug. If the
+> 10-30 seconds to respond while it wakes up. This is expected, not a bug. If the
 > button seems unresponsive on first click, give it a moment and try again.
 
 **On-chain program:** `6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt` (Solana devnet)
@@ -35,14 +35,14 @@ frontend/            Static HTML/CSS/JS: highway, leaderboard, live activity fee
 
 ### Core loops
 
-**Loop A — Payment**
+**Loop A: Payment**
 ```
 Buyer agent requests service → Seller returns 402 + price/wallet
 → Buyer signs a token transfer → Buyer retries with proof
 → Seller verifies the transaction on-chain → Seller delivers result
 ```
 
-**Loop B — Reputation**
+**Loop B: Reputation**
 ```
 Successful payment settles → Seller's on-chain reputation account increments
 → Anyone can query reputation before choosing a seller
@@ -64,7 +64,7 @@ Successful payment settles → Seller's on-chain reputation account increments
 ### 1. Prerequisites
 
 - Node.js 18+
-- Rust + Solana CLI + Anchor CLI (`avm install 0.30.1 && avm use 0.30.1` — this
+- Rust + Solana CLI + Anchor CLI (`avm install 0.30.1 && avm use 0.30.1`, this
   project pins Anchor 0.30.1 specifically; see the note on toolchain issues below)
 
 ### 2. Clone and install
@@ -90,7 +90,7 @@ solana airdrop 1 $(solana-keygen pubkey backend/buyer/buyer-keypair.json)
 This project uses its own custom devnet SPL token (mint
 `EKFUzCYkafhGWDArX2QVr1E4cGydnyk1R6pwP9j3ztFC`) rather than depending on an
 external faucet. If you need your own supply for testing, you'll need to be the
-mint authority — see `backend/seller/src/config.ts` for the mint address, and
+mint authority. See `backend/seller/src/config.ts` for the mint address, and
 mint/transfer test tokens to your buyer wallet with the `spl-token` CLI.
 
 ### 5. Run all three services
@@ -106,7 +106,7 @@ cd backend/buyer && npm run serve
 cd frontend && npx http-server -p 5173
 ```
 
-Open `http://localhost:5173` — it defaults to `localhost` URLs for the backend
+Open `http://localhost:5173`. It defaults to `localhost` URLs for the backend
 services when run this way.
 
 ### Cloud deployment notes
@@ -115,16 +115,16 @@ Both backend services read their signing keypair from an environment variable
 (`SELLER_KEYPAIR_SECRET` / `BUYER_KEYPAIR_SECRET`) if set, falling back to a local
 file otherwise. This is what makes them deployable to a host like Render, where
 you can't upload a local file but can set the raw secret key array as a secure
-environment variable. **Never commit a keypair file to git** — they're excluded
+environment variable. **Never commit a keypair file to git.** They're excluded
 via `.gitignore` for exactly this reason.
 
 ## Known simplifications (by design, for a hackathon build)
 
-- `record_payment`'s account constraints trust whoever signs as `authority` — a
+- `record_payment`'s account constraints trust whoever signs as `authority`, a
   known simplification, not a production-hardened trust model.
 - Replay protection for payment signatures is in-memory on the seller and resets
   if it restarts.
-- No facilitator — payment verification is done directly against Solana devnet
+- No facilitator. Payment verification is done directly against Solana devnet
   RPC rather than through a third-party x402 facilitator service.
 - Reputation formula is deliberately simple: percentage of successful vs. failed
   transactions, no decay or recency weighting.
