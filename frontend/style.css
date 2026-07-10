@@ -595,3 +595,25 @@ h2 {
   background: var(--bg-card-raised);
   color: var(--accent-green);
 }
+
+/* Fix: .menu-dropdown's display:flex was overriding the native [hidden]
+   attribute, keeping it visibly stuck open regardless of the JS toggle. */
+.menu-dropdown[hidden] {
+  display: none;
+}
+
+/* Desktop: show "Menu ▾" text. Mobile: show hamburger icon instead. */
+.menu-burger {
+  display: none;
+  font-size: 20px;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .menu-label {
+    display: none;
+  }
+  .menu-burger {
+    display: inline;
+  }
+}
