@@ -617,3 +617,13 @@ h2 {
     display: inline;
   }
 }
+
+/* Critical fix: Ensure dropdown respects the [hidden] attribute */
+.menu-dropdown[hidden] {
+  display: none !important;
+}
+
+/* Make sure the dropdown doesn't overlap other UI elements */
+.header-menu {
+  z-index: 100;
+}
