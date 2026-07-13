@@ -179,7 +179,7 @@ runPurchaseBtn.addEventListener("click", async () => {
   runPurchaseBtn.textContent = "Purchasing...";
   runPurchaseBtn.classList.remove("state-success", "state-error");
 
-  const { ok, body } = await fetchJson(BUYER_SERVER_URL, "/purchase", { method: "POST" });
+  const { ok, body } = await fetchJson(BUYER_SERVER_URL, "/demo-purchase", { method: "POST" });
 
   if (ok && body?.success) {
     runPurchaseBtn.textContent = "Purchase complete";

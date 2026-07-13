@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import { Connection } from "@solana/web3.js";
 import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import { PORT, RPC_URL, USDC_MINT, SERVICE_PRICE } from "./config.js";
@@ -14,8 +15,27 @@ import {
 import { performService, isSupportedTask, SUPPORTED_TASKS } from "./service.js";
 
 const app = express();
-app.use(cors());
+
+// Security note (audit-driven fix): CORS restricted to actual frontend
+// origins. Rate limiting on /service closes the forced-record_failure SOL
+// burn / reputation-griefing path an unauthenticated caller could otherwise
+// loop indefinitely.
+const ALLOWED_ORIGINS = [
+  "https://routex402.xyz",
+  "https://www.routex402.xyz",
+  "https://route402.onrender.com",
+];
+app.use(cors({ origin: ALLOWED_ORIGINS, methods: ["GET", "POST"] }));
 app.use(express.json());
+app.set("trust proxy", 1);
+
+const serviceLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "rate limit exceeded, try again shortly" },
+});
 
 const sellerAuthority = loadKeypair(
   "SELLER_KEYPAIR_SECRET",
@@ -77,7 +97,7 @@ app.get("/events", (_req, res) => {
  * their turn to submit the reputation update, via sellerAuthority in the
  * response body.
  */
-app.post("/service", async (req, res) => {
+app.post("/service", serviceLimiter, async (req, res) => {
   const { paymentSignature, task: requestedTask, params } = req.body ?? {};
 
   // The request now carries a real input: which task to perform. Defaults to
