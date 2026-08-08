@@ -20,6 +20,13 @@ const AGENT_NAMES = {
   "EXzH2oDbHb6a6cAWPdU9Mp42xbKDg8a5gZswtT5Z83d9": "Agent Gamma",
 };
 
+// Display-only allowlist. Three agents are seeded on-chain (can't be deleted);
+// only these two are shown on the highway and leaderboard.
+const DISPLAY_AGENTS = new Set([
+  "3y5NqkyQWJ89RjZ8juR6vMZkVEf5RJJYnYFWXtLjmZ3P",
+  "GfpYxxn1wX5UJ8Aro6e4hP53xgCS9RmBmtyAyR6KcEuf",
+]);
+
 const highwayEl = document.getElementById("highway");
 const activityListEl = document.getElementById("activity-list");
 const leaderboardListEl = document.getElementById("leaderboard-list");
@@ -247,8 +254,9 @@ async function tick() {
     fetchJson(SELLER_URL, "/events"),
   ]);
   if (agentsRes.ok && agentsRes.body) {
-    renderHighway(agentsRes.body);
-    renderLeaderboard(agentsRes.body);
+    const agents = agentsRes.body.filter((a) => DISPLAY_AGENTS.has(a.pubkey));
+    renderHighway(agents);
+    renderLeaderboard(agents);
   }
   if (eventsRes.ok && eventsRes.body) {
     renderActivity(eventsRes.body);
