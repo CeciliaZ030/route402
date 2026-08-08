@@ -1,5 +1,13 @@
-const SELLER_URL = window.SELLER_URL || "http://localhost:4021";
-const BUYER_SERVER_URL = window.BUYER_SERVER_URL || "http://localhost:4022";
+// Production URLs are injected by index.html before this script loads.
+// For local dev against a local backend, add ?backend=local to the URL.
+// For local dev against production (read-only), no query param needed.
+const _params = new URLSearchParams(window.location.search);
+const SELLER_URL = _params.get("backend") === "local"
+  ? "http://localhost:4021"
+  : (window.SELLER_URL || "http://localhost:4021");
+const BUYER_SERVER_URL = _params.get("backend") === "local"
+  ? "http://localhost:4022"
+  : (window.BUYER_SERVER_URL || "http://localhost:4022");
 const POLL_INTERVAL_MS = 3000;
 const SOLSCAN_CLUSTER = "devnet";
 
@@ -36,8 +44,9 @@ async function fetchJson(baseUrl, path, options) {
     const body = await res.json().catch(() => null);
     return { ok: res.ok, status: res.status, body };
   } catch (err) {
+    const aborted = err?.name === "AbortError";
     console.error(`Failed to fetch ${path}:`, err);
-    return { ok: false, status: 0, body: null };
+    return { ok: false, status: 0, body: null, aborted };
   }
 }
 
@@ -179,11 +188,23 @@ runPurchaseBtn.addEventListener("click", async () => {
   runPurchaseBtn.textContent = "Purchasing...";
   runPurchaseBtn.classList.remove("state-success", "state-error");
 
-  const { ok, body } = await fetchJson(BUYER_SERVER_URL, "/demo-purchase", { method: "POST" });
+  // 55s timeout — Render free-tier can take 50s+ to cold-start. Without this
+  // the fetch hangs indefinitely and the button stays stuck on "Purchasing...".
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 55_000);
+
+  const { ok, body, aborted } = await fetchJson(BUYER_SERVER_URL, "/demo-purchase", {
+    method: "POST",
+    signal: controller.signal,
+  });
+  clearTimeout(timeoutId);
 
   if (ok && body?.success) {
     runPurchaseBtn.textContent = "Purchase complete";
     runPurchaseBtn.classList.add("state-success");
+  } else if (aborted) {
+    runPurchaseBtn.textContent = "Backend waking up — try again in a moment";
+    runPurchaseBtn.classList.add("state-error");
   } else {
     runPurchaseBtn.textContent = "Purchase failed";
     runPurchaseBtn.classList.add("state-error");
