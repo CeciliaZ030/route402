@@ -12,10 +12,13 @@ const app = express();
 // frontend origins rather than the previous open default. This stops other
 // websites from calling this API from a victim's browser; it does not stop
 // direct curl/script access, which is why rate limiting below matters more.
-const ALLOWED_ORIGINS = [
+// localhost entries are for local frontend dev only; harmless in prod because
+// CORS stops browser requests — it does not stop curl/server-side callers.
+const ALLOWED_ORIGINS: (string | RegExp)[] = [
   "https://routex402.xyz",
   "https://www.routex402.xyz",
   "https://route402.onrender.com",
+  /^http:\/\/localhost(:\d+)?$/,
 ];
 app.use(cors({ origin: ALLOWED_ORIGINS, methods: ["GET", "POST"] }));
 app.use(express.json());

@@ -20,10 +20,13 @@ const app = express();
 // origins. Rate limiting on /service closes the forced-record_failure SOL
 // burn / reputation-griefing path an unauthenticated caller could otherwise
 // loop indefinitely.
-const ALLOWED_ORIGINS = [
+// localhost entries are for local frontend dev only; harmless in prod because
+// CORS stops browser requests — it does not stop curl/server-side callers.
+const ALLOWED_ORIGINS: (string | RegExp)[] = [
   "https://routex402.xyz",
   "https://www.routex402.xyz",
   "https://route402.onrender.com",
+  /^http:\/\/localhost(:\d+)?$/,
 ];
 app.use(cors({ origin: ALLOWED_ORIGINS, methods: ["GET", "POST"] }));
 app.use(express.json());
