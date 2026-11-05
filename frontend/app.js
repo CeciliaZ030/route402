@@ -169,11 +169,13 @@
       var total = a.completedCount + a.failedCount;
       var okW = total ? Math.max(a.completedCount / max * 100, a.completedCount ? 3 : 0) : 0;
       var badW = total ? Math.max(a.failedCount / max * 100, a.failedCount ? 3 : 0) : 0;
-      var stale = (nowSec - a.lastUpdated) > 30 * 86400;
+      var age = (nowSec - a.lastUpdated) / 86400;
+      var stale = age > 30;
       return h("a", { "class": "al-row", href: "#/agent/" + a.pubkey, "data-pk": a.pubkey, role: "listitem",
           "aria-label": "Agent " + shortKey(a.pubkey) + ", reputation " + a.reputationScore + ", " + a.completedCount + " completed, " + a.failedCount + " failed" },
         h("span", { "class": "al-rank", text: String(i + 1) }),
         h("span", { "class": "al-id" },
+          h("span", { "class": "al-light " + (age <= 7 ? "on" : age <= 30 ? "mid" : "off"), "aria-hidden": "true" }),
           h("span", { "class": "al-key", text: shortKey(a.pubkey) }),
           tierBadge(a._tier)),
         h("span", { "class": "al-barcell" },

@@ -289,3 +289,15 @@ body .al-row.al-flash{animation:alflash 1.8s ease-out}
   .al-rank{grid-area:rank}.al-id{grid-area:id}.al-score{grid-area:score}
   .al-barcell{grid-area:bar}.al-when{grid-area:when;text-align:left}
 }
+
+
+/* ===== Road styling (branding): asphalt lane, dashed centre line, status light ===== */
+.al-bar{position:relative;height:16px;background:linear-gradient(180deg,#2b3445,#414c5f);box-shadow:inset 0 2px 3px rgba(0,0,0,.35),0 1px 0 rgba(255,255,255,.7)}
+.al-bar::after{content:"";position:absolute;left:10px;right:10px;top:50%;height:2px;margin-top:-1px;z-index:0;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.6) 0 9px,transparent 9px 18px)}
+.al-ok,.al-bad{position:relative;z-index:1;height:100%}
+.al-ok{box-shadow:0 0 10px rgba(34,197,94,.55)}
+.al-light{display:inline-block;width:10px;height:10px;border-radius:50%;flex:none;background:#94a3b8;box-shadow:inset 0 1px 1px rgba(255,255,255,.5)}
+.al-light.on{background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.22),0 0 10px rgba(34,197,94,.75);animation:lightpulse 2.4s ease-in-out infinite}
+.al-light.mid{background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.2)}
+@keyframes lightpulse{0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,.22),0 0 8px rgba(34,197,94,.6)}50%{box-shadow:0 0 0 6px rgba(34,197,94,.1),0 0 14px rgba(34,197,94,.9)}}
