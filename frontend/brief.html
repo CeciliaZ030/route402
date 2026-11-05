@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Integration brief | Routex402</title>
+  <meta name="description" content="One-page brief: verified payment reputation for AI agents on Solana, and how a platform can check it before an agent pays.">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="stylesheet" href="dashboard.css">
+  <style>
+    .brief{max-width:820px}
+    .brief h1{font-size:clamp(26px,4vw,36px);margin:6px 0 8px}
+    .brief h2{font-size:18px;margin:28px 0 8px}
+    .brief p,.brief li{line-height:1.6}
+    .brief ul,.brief ol{padding-left:20px;margin:6px 0}
+    .brief .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:10px 0}
+    .brief .ask{border:1px solid #e2e8f0;border-left:4px solid #6d28d9;background:#faf5ff;border-radius:10px;padding:14px 16px;margin:16px 0}
+    .brief table{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+    .brief th,.brief td{text-align:left;padding:8px 10px;border-bottom:1px solid #e2e8f0;vertical-align:top}
+    .brief th{color:#475569;font-weight:600}
+    .brief .small{font-size:13px;color:#64748b}
+    .brief code,.brief a,.brief td{overflow-wrap:anywhere}
+    .dl{display:inline-block;margin:8px 0 0;font-size:14px}
+    @media print{
+      .topbar,.footer,.noprint{display:none!important}
+      body{background:#fff}
+      .brief{max-width:none;padding-top:0!important}
+      .brief .cols{grid-template-columns:repeat(3,1fr)}
+      .brief h2{break-after:avoid}
+      .card,.ask,table{break-inside:avoid}
+      a{color:inherit;text-decoration:none}
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="topbar"><div class="wrap topbar-in">
+    <a class="brand" href="index.html" aria-label="Routex402 home"><span class="logo" aria-hidden="true"><i></i><i></i></span><span class="brand-name">Routex402</span></a>
+    <nav class="nav" style="display:flex"><a href="index.html">Explorer</a><a href="demo.html">Demo</a><a href="integrate.html">Integrate</a><a href="docs.html">Docs</a></nav>
+  </div></header>
+
+  <main id="main" class="wrap brief" style="padding-top:32px">
+    <p class="eyebrow">Integration brief</p>
+    <h1>Verified payment reputation for AI agents</h1>
+    <p class="lede">A seller's score only changes when the buyer's own wallet signs the update, so a seller cannot inflate its own record. This brief shows how an agent platform can check that record before it signs a payment.</p>
+    <p class="small">Solana devnet. Independent project: not a product of any agent platform, and no partnership is implied. Last updated 5 November 2026.</p>
+
+    <div class="ask">
+      <strong>What we are asking for</strong>
+      <ol>
+        <li>An activation token, so we can deploy a read-only App to Aomi Build (<code>aomi-build connect</code> requires one).</li>
+        <li>Whether App tools may make outbound HTTPS calls, and the tool timeout. Our reputation API can take up to about 50 seconds to answer when its free-tier host is asleep.</li>
+        <li>Whether an App can read Solana devnet data.</li>
+      </ol>
+    </div>
+
+    <h2>The problem</h2>
+    <p>An agent that pays another agent has no way to tell a seller with a real track record from one that paid itself. A high score built from a single wallet looks the same as one built from many independent buyers.</p>
+
+    <h2>What a platform gets</h2>
+    <div class="cols">
+      <div class="card"><h3 class="h4">Reputation lookup</h3><p class="muted">Read-only. Score, tier, confidence and vetting checks for any seller. No signing, no wallet access.</p></div>
+      <div class="card"><h3 class="h4">Policy gate</h3><p class="muted">A <code>proceed</code> or <code>do_not_pay</code> recommendation under a Standard or Strict policy, with plain-language reasons.</p></div>
+      <div class="card"><h3 class="h4">Buyer-signed record</h3><p class="muted">After payment the buyer's wallet signs the reputation update, in the same transaction as the payment.</p></div>
+    </div>
+
+    <h2>The two tools</h2>
+    <table>
+      <tr><th>Tool</th><th>Returns</th></tr>
+      <tr><td><code>check_agent_reputation(seller, policy?)</code></td><td>Score, tier, confidence, vetting checks, recommendation and block reasons.</td></tr>
+      <tr><td><code>list_top_agents(limit?)</code></td><td>Sellers ranked by reputation, with tier and confidence.</td></tr>
+    </table>
+    <p class="small">Standard policy: reputation 80 or more, and buyer independence must not fail. Strict adds confidence of Medium or higher.</p>
+
+    <h2>What exists today</h2>
+    <ul>
+      <li><strong>Live demo</strong> of the full flow: <a href="demo.html">routex402.xyz/demo.html</a>. The lookup and policy use live data, the simulation step is mocked, and the final step is a real devnet payment to a demo seller.</li>
+      <li><strong>Read-only Aomi App</strong>, written in Rust against aomi-sdk 7.0.0. It compiles and its unit tests pass. It is not deployed yet: <a href="https://github.com/msurfx/routex402-aomi-app" target="_blank" rel="noopener">github.com/msurfx/routex402-aomi-app</a>.</li>
+      <li><strong>On-chain proof.</strong> One settled demo payment, where payment, protocol fee and reputation update are a single transaction signed by the buyer: <a href="https://solscan.io/tx/2FffhdYEqTomoXt5ACn8HtsCKhq5sTyYjb4939xrZfKy6esEgvQLCxnkjLK8uo1n3rgCSYETnYJHdfWnmuPJzfTD?cluster=devnet" target="_blank" rel="noopener">view on Solscan</a>. Program: <a href="https://solscan.io/account/6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt?cluster=devnet" target="_blank" rel="noopener">6pp5jD...P62vjt</a>.</li>
+      <li><strong>Explorer</strong> with a vetting page per agent: <a href="index.html">routex402.xyz</a>.</li>
+    </ul>
+
+    <h2>How it fits in an execution flow</h2>
+    <ol>
+      <li>The agent states its intent to pay a seller.</li>
+      <li>It calls <code>check_agent_reputation</code>.</li>
+      <li>A policy decides whether to continue. In the demo, our own top-scoring agent is blocked: every one of its payments came from a single buyer.</li>
+      <li>The platform simulates and the user approves, as it does today.</li>
+      <li>The buyer signs the payment and the reputation update together.</li>
+    </ol>
+
+    <h2>Limits you should know about</h2>
+    <ul>
+      <li>Devnet only, with a small number of demo agents. Scores are evidence, not a guarantee.</li>
+      <li>For some agents the distinct buyer count was not recorded, so confidence shows Unknown.</li>
+      <li>The contract has not had an external audit. Mainnet is planned only after one.</li>
+      <li>The tool shapes are a proposal, not a published API.</li>
+    </ul>
+
+    <h2>What comes next</h2>
+    <ul>
+      <li>A versioned public API with server-side pagination.</li>
+      <li>An unsigned-transaction endpoint so a platform can build the payment itself.</li>
+      <li>Open seller registration.</li>
+      <li>Contract hardening and an external audit, then mainnet.</li>
+    </ul>
+
+    <p class="noprint"><a class="dl" href="routex402-integration-brief.pdf">Download this brief as a PDF</a></p>
+  </main>
+
+  <footer class="footer"><div class="wrap footer-in"><span>Routex402 runs on Solana devnet.</span><span class="footer-links"><a href="index.html">Explorer</a><a href="demo.html">Demo</a><a href="integrate.html">Integrate</a></span></div></footer>
+</body>
+</html>
