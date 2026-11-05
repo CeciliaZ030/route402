@@ -88,7 +88,7 @@
   function evSig(e) { var s = e.signature || e.sig || e.txSignature || e.tx; return (typeof s === "string" && SIG.test(s)) ? s : ""; }
   function evKey(e) { return evSig(e) || e.id || JSON.stringify(e); }
   function evSeller(e) { return e.seller || e.sellerPubkey || e.sellerProfile || e.agent || e.pubkey || ""; }
-  function evText(e) { return String(e.label || e.title || e.step || e.message || e.type || e.event || "Event"); }
+  function evText(e) { return String(e.message || e.label || e.title || e.step || e.type || e.event || "Event"); }
   function evTime(e) {
     var t = e.timestamp || e.time || e.ts || e.createdAt;
     if (!t) return 0;
@@ -104,7 +104,11 @@
     Promise.all([fetchJson(SELLER_URL, "/agents"), fetchJson(SELLER_URL, "/events")]).then(function (rs) {
       var ag = rs[0], ev = rs[1];
       if (ag.ok && Array.isArray(ag.body)) {
+        var prev = {};
+        state.agents.forEach(function (x) { prev[x.pubkey] = x.completedCount; });
+        var hadAgents = state.loaded;
         state.agents = ag.body.map(enrich); state.loaded = true; state.failed = false;
+        if (hadAgents) state.agents.forEach(function (x) { if (prev[x.pubkey] !== undefined && x.completedCount > prev[x.pubkey]) fireNode(x.pubkey); });
       } else { state.failed = true; }
       if (ev.ok) {
         var list = evList(ev.body).slice();

@@ -1,0 +1,21 @@
+.cfg{display:grid;grid-template-columns:1fr 1fr auto;gap:16px;align-items:end;margin:12px 0}
+.lab2{display:block;font-size:13px;color:var(--muted);font-weight:600;margin-bottom:4px}
+.steps{list-style:none;margin:24px 0;padding:0;display:grid;gap:12px}
+.step{background:#fff;border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;display:grid;grid-template-columns:36px 1fr;gap:4px 14px;box-shadow:var(--shadow)}
+.step .ic{grid-row:1 / span 3;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;background:var(--grey-soft);color:var(--grey)}
+.step.done .ic{background:var(--green-soft);color:var(--green)}
+.step.blocked .ic{background:var(--red-soft);color:var(--red)}
+.step.running .ic{background:var(--primary-soft);color:var(--primary)}
+.step.skipped{opacity:.6}
+.step h3{margin:0;font-size:16px}
+.step .tag{font-size:12px;font-weight:600;border-radius:999px;padding:1px 8px;margin-left:8px;background:var(--grey-soft);color:var(--grey)}
+.step .tag.live{background:var(--green-soft);color:var(--green)}
+.step .tag.mock{background:var(--amber-soft);color:var(--amber)}
+.step .tag.real{background:var(--primary-soft);color:var(--primary)}
+.step p{margin:0;color:var(--muted);font-size:15px}
+.rules{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px}
+.rules li{display:flex;gap:8px;align-items:center;font-size:15px}
+.step pre.code{margin:8px 0 0;font-size:12px;max-height:260px}
+.result{font-weight:600;margin-top:8px}
+.result.ok{color:var(--green)}.result.err{color:var(--red)}
+@media (max-width:720px){.cfg{grid-template-columns:1fr}}

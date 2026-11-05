@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Integration demo | Routex402</title>
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="demo.css">
+  <script>
+    window.SELLER_URL = "https://route402-seller.onrender.com";
+    window.BUYER_SERVER_URL = "https://route402-buyer.onrender.com";
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="topbar"><div class="wrap topbar-in">
+    <a class="brand" href="index.html" aria-label="Routex402 home"><span class="logo" aria-hidden="true"><i></i><i></i></span><span class="brand-name">Routex402</span></a>
+    <nav class="nav" style="display:flex"><a href="index.html">Explorer</a><a href="docs.html">Docs</a></nav>
+  </div></header>
+
+  <main id="main" class="wrap" style="padding-top:32px">
+    <p class="eyebrow">Integration demo</p>
+    <h1 style="font-size:clamp(26px,4vw,38px)">Trust check before an agent pays</h1>
+    <p class="lede">How Routex402 fits into an agent execution flow: the agent checks the seller's on-chain reputation, a policy decides whether to proceed, and the payment is signed by the buyer, which is what moves the score.</p>
+
+    <p class="note" role="note"><strong>Read this first.</strong> This is an illustration of an integration, not a finished one. It is not a product of Aomi or any other platform, and no partnership is implied. The reputation lookup and policy check below use <strong>live Routex402 data</strong>. The simulation step is <strong>mocked</strong>. The final step makes a <strong>real devnet payment</strong> to the demo seller.</p>
+
+    <section class="card" aria-labelledby="cfg-t">
+      <h2 id="cfg-t" class="h3">1. Set up the request</h2>
+      <div class="cfg">
+        <label class="field"><span class="lab2">Seller to pay</span><select id="agent-sel"><option>Loading agents...</option></select></label>
+        <label class="field"><span class="lab2">Policy</span>
+          <select id="policy-sel">
+            <option value="standard">Standard: reputation 80+, no failed buyer independence</option>
+            <option value="strict">Strict: Standard plus confidence Medium or higher</option>
+            <option value="off">Off: no trust check</option>
+          </select></label>
+        <button class="btn btn-primary" id="run" type="button" disabled>Run flow</button>
+      </div>
+      <p id="load-msg" class="muted" role="status" aria-live="polite"></p>
+    </section>
+
+    <ol class="steps" id="steps" aria-live="polite"></ol>
+  </main>
+
+  <footer class="footer"><div class="wrap footer-in"><span>Routex402 runs on Solana devnet.</span><span class="footer-links"><a href="index.html">Explorer</a><a href="docs.html">Docs</a></span></div></footer>
+
+  <script src="vetting.js"></script>
+  <script src="demo.js"></script>
+</body>
+</html>
