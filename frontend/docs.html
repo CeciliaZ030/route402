@@ -1,170 +1,249 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Docs: Routex402</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Docs | Routex402</title>
+  <meta name="description" content="Routex402 documentation: how verified payment reputation works, the vetting model, the API, the security model and how to integrate.">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="stylesheet" href="dashboard.css">
   <style>
-    .docs-content {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 0 1.5rem 4rem;
-      line-height: 1.6;
+    .docs{display:grid;grid-template-columns:230px minmax(0,1fr) 200px;gap:32px;max-width:1240px;margin:0 auto;padding:28px 16px 64px;align-items:start}
+    .side,.toc{position:sticky;top:84px;max-height:calc(100vh - 100px);overflow:auto;font-size:14.5px}
+    .side h4,.toc h4{margin:18px 0 6px;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+    .side h4:first-child{margin-top:0}
+    .side a,.toc a{display:block;padding:5px 10px;border-radius:8px;color:#1e293b;text-decoration:none;border-left:2px solid transparent}
+    .side a:hover,.toc a:hover{background:rgba(67,56,202,.07)}
+    .side a.on,.toc a.on{color:var(--primary);font-weight:650;border-left-color:var(--primary);background:rgba(67,56,202,.08)}
+    .toc a{padding:4px 10px;font-size:13.5px;color:var(--muted)}
+    .doc{min-width:0}
+    .doc section{padding-top:8px;margin-bottom:40px;scroll-margin-top:84px}
+    .doc h1{font-size:clamp(28px,4vw,38px);margin-bottom:6px}
+    .doc h2{font-size:24px;margin:0 0 10px;padding-top:6px}
+    .doc h3{font-size:17px;margin:22px 0 6px}
+    .doc p,.doc li{line-height:1.7}
+    .doc ul,.doc ol{padding-left:22px}
+    .doc code{font-family:var(--mono);font-size:.88em;background:rgba(15,23,42,.06);padding:1px 6px;border-radius:6px}
+    .doc pre.code code{background:none;padding:0}
+    .doc table{width:100%;border-collapse:collapse;font-size:14.5px;margin:10px 0 16px}
+    .doc th,.doc td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--glass-line);vertical-align:top}
+    .doc th{color:#334155;background:rgba(15,23,42,.04);font-weight:650}
+    .doc td,.doc code,.doc a{overflow-wrap:anywhere}
+    .callout{border:1px solid var(--glass-line);border-left:4px solid var(--primary);border-radius:12px;padding:12px 16px;margin:14px 0;background:var(--glass)}
+    .callout.warn{border-left-color:#b45309;background:rgba(254,243,199,.7)}
+    .pill{display:inline-block;font-size:12px;font-weight:700;padding:1px 8px;border-radius:999px;background:var(--primary-soft);color:var(--primary);margin-left:6px}
+    .menu-btn{display:none}
+    @media (max-width:1080px){.docs{grid-template-columns:210px minmax(0,1fr)}.toc{display:none}}
+    @media (max-width:760px){
+      .docs{grid-template-columns:1fr;padding-top:16px}
+      .side{position:static;max-height:none;margin-bottom:8px}
+      .side details>summary{cursor:pointer;font-weight:650;padding:10px 14px;border:1px solid var(--glass-line);border-radius:12px;background:var(--glass-strong);list-style:none}
+      .side details[open]>summary{margin-bottom:8px}
     }
-    .docs-content h2 {
-      font-size: 15px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--text-secondary);
-      margin: 2.5rem 0 0.75rem;
-    }
-    .docs-content h2:first-of-type {
-      margin-top: 0;
-    }
-    .docs-content p {
-      color: var(--text-primary);
-      font-size: 15px;
-      margin: 0 0 1rem;
-    }
-    .docs-content ul {
-      color: var(--text-primary);
-      font-size: 15px;
-      padding-left: 1.25rem;
-      margin: 0 0 1rem;
-    }
-    .docs-content li {
-      margin-bottom: 0.5rem;
-    }
-    .docs-content code {
-      background: var(--bg-card-raised);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 0.1rem 0.4rem;
-      font-size: 13px;
-      color: var(--accent-green);
-    }
-    .docs-content .callout {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 1rem 1.25rem;
-      margin: 1rem 0;
-      font-size: 14px;
-      color: var(--text-secondary);
-    }
-    .back-link {
-      display: inline-block;
-      margin-bottom: 1.5rem;
-      color: var(--text-muted);
-      text-decoration: none;
-      font-size: 14px;
-    }
-    .back-link:hover {
-      color: var(--accent-green);
-    }
+    @media (min-width:761px){.side details>summary{display:none}}
   </style>
 </head>
 <body>
-  <header id="site-header">
-    <div class="logo-mark" aria-hidden="true">
-      <span class="logo-dot dot-purple"></span>
-      <span class="logo-dot dot-green"></span>
-    </div>
-    <div>
-      <div class="logo-name">Routex402</div>
-      <div class="logo-tagline">Verified reputation for AI agent payments</div>
-    </div>
-    <a href="https://solana.com" target="_blank" rel="noopener" class="built-on-solana">Built on Solana &#8599;</a>
-  </header>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="topbar"><div class="wrap topbar-in">
+    <a class="brand" href="index.html" aria-label="Routex402 home"><span class="logo" aria-hidden="true"><i></i><i></i></span><span class="brand-name">Routex402</span></a>
+    <nav class="nav" style="display:flex"><a href="index.html">Explorer</a><a href="demo.html">Demo</a><a href="integrate.html">Integrate</a><a href="docs.html">Docs</a></nav>
+  </div></header>
 
-  <main class="docs-content">
-    <a href="index.html" class="back-link">&larr; Back to app</a>
+  <div class="docs">
+    <aside class="side" aria-label="Documentation">
+      <details open>
+        <summary>Documentation menu</summary>
+        <h4>Get started</h4>
+        <a href="#overview">Overview</a>
+        <a href="#quickstart">Quickstart</a>
+        <h4>Concepts</h4>
+        <a href="#reputation">How reputation works</a>
+        <a href="#vetting">Vetting model</a>
+        <a href="#security">Security model</a>
+        <h4>Reference</h4>
+        <a href="#api">API</a>
+        <a href="#onchain">On-chain program</a>
+        <h4>Integrate</h4>
+        <a href="#integrate">Integrating a platform</a>
+        <a href="#limits">Limits and roadmap</a>
+      </details>
+    </aside>
 
-    <h2>Overview</h2>
-    <p>
-      Routex402 is on-chain, verified reputation for AI agent payments on Solana.
-      Two agents transact using an x402-style HTTP 402 payment flow. Every
-      completed payment can update the seller's reputation score, but only
-      if the buyer's own wallet signs that update. A seller cannot self-report
-      its own success.
-    </p>
+    <main id="main" class="doc">
+      <p class="eyebrow">Documentation</p>
+      <h1>Routex402 docs</h1>
+      <p class="lede">Verified payment reputation for AI agents on Solana. Everything here describes the devnet system as it runs today.</p>
 
-    <h2>How it works</h2>
-    <p><strong>Loop A: payment.</strong> A buyer requests a service. The
-    seller responds with an HTTP 402 (Payment Required) challenge specifying a
-    price and destination. The buyer signs and sends a real Solana transaction,
-    then retries the request with proof of payment. The seller independently
-    verifies that transaction against devnet RPC before delivering the result.</p>
-    <p><strong>Loop B: reputation.</strong> Once a payment is verified,
-    the <em>buyer</em>, not the seller, submits the on-chain
-    instruction that updates the seller's reputation. This is enforced by the
-    Anchor program itself, not by application-level trust.</p>
+      <section id="overview">
+        <h2>Overview</h2>
+        <p>Routex402 records a reputation for each seller agent. The rule that makes it trustworthy is simple: <strong>a seller's score only changes when the buyer's own wallet signs the update</strong>. A seller cannot raise its own score.</p>
+        <p>The system has four parts:</p>
+        <ul>
+          <li><strong>On-chain program</strong> that stores one profile per seller and applies buyer-signed updates.</li>
+          <li><strong>Seller API</strong> that lists agents and serves a demo service behind an HTTP 402 payment challenge.</li>
+          <li><strong>Buyer service</strong> that runs a demo purchase end to end.</li>
+          <li><strong>Explorer</strong> where you can inspect each agent's evidence and vetting result.</li>
+        </ul>
+        <div class="callout warn"><strong>Devnet only.</strong> Scores come from a small number of demo agents. The contract has not had an external audit. Scores are evidence, not a guarantee.</div>
+      </section>
 
-    <h2>Security model</h2>
-    <p>
-      The core design decision: <code>record_payment</code> (and its atomic
-      successor <code>pay_and_record</code>) require the buyer's signature to
-      execute. This closes a specific, real vulnerability. Without it,
-      any actor controlling two wallets could pay itself trivially and inflate
-      its own reputation at zero real cost.
-    </p>
-    <p>Additional protections currently in place:</p>
-    <ul>
-      <li><code>require_keys_neq!(buyer, seller)</code>, which blocks the most
-      naive same-actor self-dealing case at the protocol level.</li>
-      <li><code>distinctBuyers</code> tracking, a foundation for
-      weighting reputation by real, varied counterparties rather than raw
-      repeated-transaction volume with a single colluding partner.</li>
-    </ul>
-    <div class="callout">
-      <strong>Honest limitations, stated plainly:</strong> this does not yet
-      fully prevent a single actor controlling two independent-looking
-      wallets, nor wash trading between a small colluding ring. These are
-      documented, known gaps, not hidden ones, and are the
-      specific target of the counterparty-weighting and bonded-stake work on
-      the roadmap below.
-    </div>
+      <section id="quickstart">
+        <h2>Quickstart</h2>
+        <ol>
+          <li>Open the <a href="index.html">Explorer</a> and click an agent to see its vetting page.</li>
+          <li>Run the <a href="demo.html">integration demo</a> to watch a reputation check gate a payment.</li>
+          <li>Or read the data directly:</li>
+        </ol>
+<pre class="code"><code>curl https://route402-seller.onrender.com/agents</code></pre>
+        <p class="muted">The API runs on a free tier. The first request after idle can take up to about 50 seconds.</p>
+      </section>
 
-    <h2>Program reference</h2>
-    <p>
-      On-chain program (Solana devnet):<br />
-      <code>6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt</code>
-    </p>
-    <p>
-      Verify this independently. Don't take our word for it:<br />
-      <a class="solscan-link" href="https://solscan.io/account/6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt?cluster=devnet" target="_blank" rel="noopener">View program on Solscan &#8599;</a>
-    </p>
-    <p>
-      Every transaction shown in the live activity feed links directly to its
-      own Solscan record. The app's own claims are independently
-      checkable, not just trusted.
-    </p>
+      <section id="reputation">
+        <h2>How reputation works</h2>
+        <ol>
+          <li>The buyer requests a service. The seller answers with an HTTP <code>402</code> challenge that states the price.</li>
+          <li>The buyer pays. In the demo, payment, protocol fee and reputation update are one transaction.</li>
+          <li>The seller verifies the payment and delivers the result.</li>
+          <li>The buyer's wallet signs the reputation update. That signature is what moves the score.</li>
+        </ol>
+        <p>Every step can be checked on Solscan. The demo purchase links the transaction.</p>
+      </section>
 
-    <h2>Current status</h2>
-    <p>
-      Devnet only. No real economic value has moved through this system.
-      Security-conscious in design, but not yet independently audited.
-      We say this plainly because we'd rather be precise about readiness
-      than overclaim it.
-    </p>
+      <section id="vetting">
+        <h2>Vetting model</h2>
+        <p>Each agent page runs five checks. A check returns <code>pass</code>, <code>caution</code>, <code>fail</code> or <code>unknown</code>, and shows the numbers behind it.</p>
+        <table>
+          <tr><th>Check</th><th>Pass</th><th>Caution</th><th>Fail</th></tr>
+          <tr><td>Track record</td><td>15 or more completed payments</td><td>5 to 14</td><td>Fewer than 5</td></tr>
+          <tr><td>Success rate</td><td>95% or more</td><td>80% to under 95%</td><td>Under 80%</td></tr>
+          <tr><td>Buyer independence</td><td>5 or more distinct buyers</td><td>2 to 4</td><td>One buyer with 10 or more payments</td></tr>
+          <tr><td>Volume consistency</td><td>Total volume within 5% of price times payments</td><td>More than 5% off</td><td>Never fails. Unknown if there is no price or no payments</td></tr>
+          <tr><td>Recent activity</td><td>Within 7 days</td><td>Within 30 days</td><td>Older than 30 days</td></tr>
+        </table>
+        <h3>Confidence</h3>
+        <ul>
+          <li><strong>Unrated</strong>: fewer than 5 completed payments.</li>
+          <li><strong>Unknown</strong>: payments exist, but the distinct buyer count was not recorded for this agent (a known gap from an earlier migration). It is never reported as a failure.</li>
+          <li><strong>High</strong>: 15 or more payments from 5 or more buyers.</li>
+          <li><strong>Medium</strong>: 5 or more payments from 2 or more buyers.</li>
+          <li><strong>Low</strong>: anything else, such as many payments from a single buyer.</li>
+        </ul>
+        <h3>Tiers</h3>
+        <p><strong>Elite</strong>: 15 or more completed payments and a score of 90 or more. <strong>Trusted</strong>: 5 or more and 70 or more. Everything else is <strong>New</strong>.</p>
+      </section>
 
-    <h2 id="roadmap">Roadmap</h2>
-    <ul>
-      <li>Independent security audit</li>
-      <li>Mainnet migration, after audit findings are addressed</li>
-      <li>x402 spec compliance, becoming wire-compatible with the
-      Linux Foundation-governed standard</li>
-      <li>Third-party seller onboarding tooling</li>
-      <li>Framework/MCP integration for agent developers</li>
-    </ul>
+      <section id="security">
+        <h2>Security model</h2>
+        <ul>
+          <li><strong>Buyer-signed updates.</strong> The program rejects a reputation change without the buyer's signature.</li>
+          <li><strong>Atomic settlement.</strong> Payment and reputation update land together, so one cannot happen without the other.</li>
+          <li><strong>Restricted API access.</strong> The seller and buyer services only accept browser requests from approved origins, and the public demo endpoint is rate limited.</li>
+          <li><strong>Protected endpoints.</strong> The buyer's private purchase endpoint requires a secret token and is not part of the public API.</li>
+        </ul>
+        <div class="callout warn"><strong>Known limit.</strong> One person who controls both the buyer wallet and the seller wallet can still inflate a score. The buyer independence check flags this pattern but cannot rule it out.</div>
+      </section>
 
-    <h2>Links</h2>
-    <ul>
-      <li><a class="solscan-link" href="https://github.com/msurfx/route402" target="_blank" rel="noopener">GitHub repository &#8599;</a></li>
-      <li><a class="solscan-link" href="index.html">Live demo &rarr;</a></li>
-    </ul>
-  </main>
+      <section id="api">
+        <h2>API</h2>
+        <p>Base URL: <code>https://route402-seller.onrender.com</code>. Read-only endpoints need no authentication. This is not yet a versioned API, and the shape may change.</p>
+
+        <h3><code>GET /agents</code></h3>
+        <p>Returns an array of seller profiles.</p>
+        <table>
+          <tr><th>Field</th><th>Meaning</th></tr>
+          <tr><td><code>pubkey</code></td><td>Seller profile address.</td></tr>
+          <tr><td><code>authority</code></td><td>Seller's payout wallet.</td></tr>
+          <tr><td><code>price</code></td><td>Service price in token base units.</td></tr>
+          <tr><td><code>reputationScore</code></td><td>0 to 100.</td></tr>
+          <tr><td><code>completedCount</code>, <code>failedCount</code></td><td>Recorded outcomes.</td></tr>
+          <tr><td><code>totalVolume</code></td><td>Total paid, in token base units.</td></tr>
+          <tr><td><code>distinctBuyers</code></td><td>Different buyers recorded. May be 0 for older agents (see Confidence).</td></tr>
+          <tr><td><code>lastUpdated</code></td><td>Unix time of the last update.</td></tr>
+        </table>
+
+        <h3><code>GET /events</code></h3>
+        <p>Returns recent steps of the payment loop, newest first.</p>
+        <table>
+          <tr><th>Field</th><th>Meaning</th></tr>
+          <tr><td><code>id</code></td><td>Increasing event number.</td></tr>
+          <tr><td><code>timestamp</code></td><td>ISO 8601 time.</td></tr>
+          <tr><td><code>step</code></td><td>Stage name, such as <code>402_challenge</code> or <code>verify_payment</code>.</td></tr>
+          <tr><td><code>message</code></td><td>Readable description.</td></tr>
+          <tr><td><code>signature</code></td><td>Transaction signature, when the step has one.</td></tr>
+        </table>
+
+        <h3><code>POST /demo-purchase</code> <span class="pill">buyer service</span></h3>
+        <p>Base URL: <code>https://route402-buyer.onrender.com</code>. Runs one demo purchase on devnet and returns the settlement. Rate limited to a few requests a minute per address.</p>
+<pre class="code"><code>{
+  "success": true,
+  "signature": "&lt;transaction signature&gt;",
+  "reputationTxSignature": "&lt;same signature when settled atomically&gt;",
+  "protocolFee": 256
+}</code></pre>
+      </section>
+
+      <section id="onchain">
+        <h2>On-chain program</h2>
+        <table>
+          <tr><th>Cluster</th><td>Solana devnet</td></tr>
+          <tr><th>Program ID</th><td><a href="https://solscan.io/account/6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt?cluster=devnet" target="_blank" rel="noopener"><code>6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt</code></a></td></tr>
+          <tr><th>Source</th><td><a href="https://github.com/msurfx/route402" target="_blank" rel="noopener">github.com/msurfx/route402</a></td></tr>
+        </table>
+      </section>
+
+      <section id="integrate">
+        <h2>Integrating a platform</h2>
+        <p>An agent platform can look up a seller before it signs a payment. We publish a read-only App with two tools, <code>check_agent_reputation</code> and <code>list_top_agents</code>, which return the score, vetting checks and a <code>proceed</code> or <code>do_not_pay</code> recommendation.</p>
+        <ul>
+          <li><a href="integrate.html">Integration overview</a> and the <a href="brief.html">one-page brief</a> (<a href="routex402-integration-brief.pdf">PDF</a>).</li>
+          <li><a href="demo.html">Live demo</a> of the full flow.</li>
+          <li><a href="https://github.com/msurfx/routex402-aomi-app" target="_blank" rel="noopener">Source of the read-only App</a>.</li>
+        </ul>
+        <p class="muted">The tool shapes are a proposal, not a published API. This is an independent project and no partnership is implied.</p>
+      </section>
+
+      <section id="limits">
+        <h2>Limits and roadmap</h2>
+        <h3>Limits today</h3>
+        <ul>
+          <li>Devnet only, with a handful of demo agents.</li>
+          <li>The API returns every agent in one response and is not paginated.</li>
+          <li>Some agents have no recorded distinct buyer count.</li>
+          <li>No external audit of the contract yet.</li>
+        </ul>
+        <h3>Next</h3>
+        <ul>
+          <li>A versioned public API with server-side pagination.</li>
+          <li>An unsigned-transaction endpoint so a platform can build the payment itself.</li>
+          <li>Open seller registration.</li>
+          <li>Contract hardening and an external audit, then mainnet.</li>
+        </ul>
+      </section>
+    </main>
+
+    <nav class="toc" aria-label="On this page">
+      <h4>On this page</h4>
+      <a href="#overview">Overview</a><a href="#quickstart">Quickstart</a><a href="#reputation">How reputation works</a><a href="#vetting">Vetting model</a><a href="#security">Security model</a><a href="#api">API</a><a href="#onchain">On-chain program</a><a href="#integrate">Integrating</a><a href="#limits">Limits and roadmap</a>
+    </nav>
+  </div>
+
+  <footer class="footer"><div class="wrap footer-in"><span>Routex402 runs on Solana devnet.</span><span class="footer-links"><a href="index.html">Explorer</a><a href="demo.html">Demo</a><a href="integrate.html">Integrate</a></span></div></footer>
+
+  <script>
+    (function () {
+      var links = Array.prototype.slice.call(document.querySelectorAll(".side a, .toc a"));
+      var secs = Array.prototype.slice.call(document.querySelectorAll(".doc section"));
+      if (!("IntersectionObserver" in window) || !secs.length) return;
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          links.forEach(function (a) { a.classList.toggle("on", a.getAttribute("href") === "#" + e.target.id); });
+        });
+      }, { rootMargin: "-80px 0px -65% 0px" });
+      secs.forEach(function (s) { io.observe(s); });
+      if (window.matchMedia("(max-width:760px)").matches) { var d = document.querySelector(".side details"); if (d) d.open = false; }
+    })();
+  </script>
 </body>
 </html>
