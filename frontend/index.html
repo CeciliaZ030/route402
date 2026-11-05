@@ -1,88 +1,149 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Routex402: Verified reputation for AI agent payments</title>
-  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png" />
-  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png" />
-  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css" />
-</head>
-<body>
-  <header id="site-header">
-    <div class="logo-mark" aria-hidden="true">
-      <span class="logo-dot dot-purple"></span>
-      <span class="logo-dot dot-green"></span>
-    </div>
-    <div>
-      <div class="logo-name">Routex402</div>
-      <div class="logo-tagline">Verified reputation for AI agent payments</div>
-    </div>
-    <div class="header-menu">
-      <button id="menu-toggle" class="menu-toggle">
-        <span class="menu-label">Menu &#9662;</span>
-        <span class="menu-burger">&#9776;</span>
-      </button>
-      <div id="menu-dropdown" class="menu-dropdown" hidden>
-        <a href="docs.html">Docs</a>
-        <a href="docs.html#roadmap">Roadmap</a>
-        <a href="https://github.com/msurfx/route402" target="_blank" rel="noopener">GitHub &#8599;</a>
-        <a href="https://solscan.io/account/6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt?cluster=devnet" target="_blank" rel="noopener">Program on Solscan &#8599;</a>
-        <a href="https://solana.com" target="_blank" rel="noopener">Built on Solana &#8599;</a>
-      </div>
-    </div>
-  </header>
-
-  <main>
-    <section id="controls" aria-label="Demo controls">
-      <div>
-        <h2>Demo controls</h2>
-        <p class="section-caption">Trigger a real buyer &rarr; seller payment on Solana devnet</p>
-      </div>
-      <button id="run-purchase">Run purchase</button>
-    </section>
-
-    <section id="highway-section" aria-label="Agent highway">
-      <h2>Agent highway</h2>
-      <p class="section-caption">Sellers on-chain, right now. A green dot travels when a payment lands</p>
-      <div id="highway"></div>
-    </section>
-
-    <section id="activity" aria-label="Live activity feed">
-      <h2>Live activity</h2>
-      <p class="section-caption">Each step of the payment loop, as it happens. Click a row's link to verify it on Solscan</p>
-      <div id="activity-list"></div>
-    </section>
-
-    <section id="leaderboard" aria-label="Agent leaderboard">
-      <h2>Leaderboard</h2>
-      <p class="section-caption">
-        Ranked by on-chain reputation score &middot;
-        <a class="solscan-link" href="https://solscan.io/account/6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt?cluster=devnet" target="_blank" rel="noopener">View program on Solscan &#8599;</a>
-      </p>
-      <div id="leaderboard-list"></div>
-    </section>
-
-    <section id="expanded" aria-label="Expanded agent view" hidden>
-      <button id="close-expanded">Close</button>
-      <div id="expanded-content"></div>
-    </section>
-  </main>
+  <meta name="description" content="Verified reputation for AI agent payments on Solana. A seller's score only moves when the buyer's own wallet signs it.">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="dashboard.css">
   <script>
     window.SELLER_URL = "https://route402-seller.onrender.com";
     window.BUYER_SERVER_URL = "https://route402-buyer.onrender.com";
   </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="wrap topbar-in">
+      <a class="brand" href="#/" aria-label="Routex402 home">
+        <span class="logo" aria-hidden="true"><i></i><i></i></span>
+        <span class="brand-name">Routex402</span>
+      </a>
+      <button class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="nav" aria-label="Toggle menu">Menu</button>
+      <nav class="nav" id="nav" aria-label="Main">
+        <a href="#explorer">Explorer</a>
+        <a href="#how">How vetting works</a>
+        <a href="docs.html">Docs</a>
+        <a href="https://github.com/msurfx/route402" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://solscan.io/account/6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt?cluster=devnet" target="_blank" rel="noopener">Solscan</a>
+      </nav>
+    </div>
+  </header>
+
+  <div id="status-banner" class="banner" role="status" aria-live="polite" hidden>Backend waking up, retrying...</div>
+
+  <main id="main">
+    <!-- HOME VIEW -->
+    <div id="view-home">
+      <section class="hero">
+        <div class="wrap">
+          <p class="eyebrow">Solana devnet</p>
+          <h1>Verified reputation for AI agent payments</h1>
+          <p class="lede">A seller's score only moves when the buyer's own wallet signs the update. Browse agents, inspect the evidence behind each score, and check it on-chain.</p>
+
+          <div class="stats" id="stats" aria-label="Live statistics">
+            <div class="stat"><span class="stat-v skel" data-stat="agents">&nbsp;</span><span class="stat-l">Agents</span></div>
+            <div class="stat"><span class="stat-v skel" data-stat="payments">&nbsp;</span><span class="stat-l">Completed payments</span></div>
+            <div class="stat"><span class="stat-v skel" data-stat="volume">&nbsp;</span><span class="stat-l">Total volume (USDC)</span></div>
+            <div class="stat"><span class="stat-v skel" data-stat="avg">&nbsp;</span><span class="stat-l">Average reputation</span></div>
+          </div>
+
+          <div class="card demo">
+            <div>
+              <h2 class="h3">Run a live demo payment</h2>
+              <p class="muted">Triggers a real buyer to seller payment on Solana devnet, then records the buyer-signed reputation update.</p>
+              <p id="purchase-result" class="demo-msg" role="status" aria-live="polite"></p>
+            </div>
+            <div class="demo-actions">
+              <button class="btn btn-primary" id="run-purchase" type="button">Run purchase</button>
+              <a class="btn btn-ghost" id="pitch-link" href="https://docs.google.com/presentation/d/1JTZLMFCEqeFhNHtRX9MFH0nRIYUc9DBb/edit?usp=sharing" target="_blank" rel="noopener">View pitch deck</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="hw-title">
+        <div class="wrap">
+          <div class="sec-head">
+            <div>
+              <h2 id="hw-title">Agent highway</h2>
+              <p class="muted">Top agents by reputation. A green dot travels to an agent when a payment lands.</p>
+            </div>
+            <a class="link" href="#explorer">View all agents</a>
+          </div>
+          <div class="hw"><div id="highway-track" class="hw-track"></div></div>
+        </div>
+      </section>
+
+      <section class="section alt" id="how" aria-labelledby="how-title">
+        <div class="wrap">
+          <h2 id="how-title">How vetting works</h2>
+          <p class="muted sec-sub">Every agent page runs automated checks on public on-chain evidence. Each check returns Pass, Caution, Fail or Unknown, and shows the numbers behind it.</p>
+          <div class="grid">
+            <div class="card"><h3 class="h4">Track record</h3><p class="muted">How many payments the agent has completed. Fewer than 5 means there is not enough history to rate.</p></div>
+            <div class="card"><h3 class="h4">Success rate</h3><p class="muted">Completed payments against recorded failures. Pass at 95% or more.</p></div>
+            <div class="card"><h3 class="h4">Buyer independence</h3><p class="muted">How many different buyers paid the agent. Many payments from one buyer is a warning sign.</p></div>
+            <div class="card"><h3 class="h4">Volume consistency</h3><p class="muted">Whether total volume matches price times payments, allowing 5% for protocol fees.</p></div>
+            <div class="card"><h3 class="h4">Recent activity</h3><p class="muted">How long since the agent's last recorded payment. Stale agents are flagged.</p></div>
+            <div class="card"><h3 class="h4">Buyer-signed updates</h3><p class="muted">Built into the program: a score cannot change without the buyer's own signature. <a href="docs.html">Read the security model</a>.</p></div>
+          </div>
+          <p class="note"><strong>Limits.</strong> One person who controls both the buyer and the seller wallet can still inflate a score. The buyer independence check flags this pattern but cannot rule it out. Scores are informational, not a guarantee. This is a devnet demonstration.</p>
+        </div>
+      </section>
+
+      <section class="section" id="explorer" aria-labelledby="ex-title">
+        <div class="wrap">
+          <div class="sec-head"><h2 id="ex-title">Agent explorer</h2></div>
+          <div class="toolbar">
+            <label class="field grow"><span class="sr">Search agents</span>
+              <input id="q" type="search" placeholder="Search by public key" autocomplete="off"></label>
+            <label class="field"><span class="sr">Filter by tier</span>
+              <select id="f-tier"><option value="all">All tiers</option><option>Elite</option><option>Trusted</option><option>New</option></select></label>
+            <label class="field"><span class="sr">Filter by confidence</span>
+              <select id="f-conf"><option value="all">All confidence</option><option>High</option><option>Medium</option><option>Low</option><option>Unknown</option><option>Unrated</option></select></label>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl" id="tbl">
+              <thead><tr id="thead-row"></tr></thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
+          <div class="pager" id="pager"></div>
+        </div>
+      </section>
+
+      <section class="section alt" aria-labelledby="act-title">
+        <div class="wrap">
+          <h2 id="act-title">Live activity</h2>
+          <p class="muted sec-sub">Latest steps of the payment loop. Open a row to verify it on Solscan.</p>
+          <ul class="act" id="activity" aria-live="polite"></ul>
+        </div>
+      </section>
+    </div>
+
+    <!-- AGENT VIEW -->
+    <div id="view-agent" hidden>
+      <div class="wrap" id="agent-root"></div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-in">
+      <span>Routex402 runs on Solana devnet.</span>
+      <span class="footer-links">
+        <a href="docs.html">Docs</a>
+        <a href="https://github.com/msurfx/route402" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://solscan.io/account/6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt?cluster=devnet" target="_blank" rel="noopener">Solscan</a>
+        <a href="https://x.com/routex402" target="_blank" rel="noopener">X @routex402</a>
+      </span>
+    </div>
+  </footer>
+
   <script src="vetting.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
-
-<div style="text-align: center; margin: 60px 0 80px;">
-    <a href="https://docs.google.com/presentation/d/1JTZLMFCEqeFhNHtRX9MFH0nRIYUc9DBb/edit?usp=sharing" 
-       target="_blank" 
-       style="display: inline-block; padding: 16px 36px; background: #22c55e; color: #000; font-weight: bold; font-size: 18px; border-radius: 12px; text-decoration: none; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.3); transition: all 0.2s;">
-        📄 View Routex402 Pitch Deck →
-    </a>
-</div>
