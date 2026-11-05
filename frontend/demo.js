@@ -107,7 +107,11 @@
       s5.append(msg, go);
       await new Promise(function (resolve) { go.addEventListener("click", resolve, { once: true }); });
       go.disabled = true; go.textContent = "Signing...";
-      var res = await fetchJson(BUYER_URL, "/demo-purchase", { method: "POST" }, 55000);
+      msg.textContent = "Waiting for the backend. On the free tier the first request after idle can take up to about 90 seconds. Please keep this tab open.";
+      var started = Date.now();
+      var tick = setInterval(function () { go.textContent = "Signing... " + Math.floor((Date.now() - started) / 1000) + "s"; }, 1000);
+      var res = await fetchJson(BUYER_URL, "/demo-purchase", { method: "POST" }, 120000);
+      clearInterval(tick);
       go.remove();
       if (res.ok && res.body && res.body.success) {
         var sig = SIG.test(res.body.signature || "") ? res.body.signature : "";
@@ -128,4 +132,6 @@
 
   $("#run").addEventListener("click", run);
   loadAgents();
+  // Wake the buyer in the background so the first real payment is faster. no-cors: we only need the request to land.
+  try { fetch(BUYER_URL + "/", { mode: "no-cors" }).catch(function () {}); } catch (e) {}
 })();
