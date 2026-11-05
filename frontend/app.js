@@ -156,35 +156,54 @@
   }
 
   function renderHighway() {
-    var track = $("#highway-track");
-    if (!state.loaded) { track.textContent = "Loading agents..."; return; }
+    var box = $("#highway-track");
+    if (!state.loaded) { box.textContent = "Loading agents..."; return; }
     var top = ranked().slice(0, 6);
-    var sig = top.map(function (a) { return a.pubkey + a.reputationScore + a._tier; }).join("|");
-    if (track.dataset.sig === sig) return;
-    track.dataset.sig = sig;
-    if (!top.length) { setChildren(track, h("p", { "class": "muted", text: "No agents yet." })); return; }
-    setChildren(track, top.map(function (a) {
-      return h("a", { "class": "hw-node", href: "#/agent/" + a.pubkey, "data-pk": a.pubkey, "aria-label": "Agent " + shortKey(a.pubkey) + ", reputation " + a.reputationScore },
-        h("span", { "class": "hw-badge", text: a.pubkey.slice(0, 2).toUpperCase() }),
-        h("span", { "class": "hw-key", text: shortKey(a.pubkey) }),
-        h("span", { "class": "hw-score", text: String(a.reputationScore) }),
-        tierBadge(a._tier));
+    var sig = top.map(function (a) { return [a.pubkey, a.reputationScore, a._tier, a.completedCount, a.failedCount, a.lastUpdated].join(":"); }).join("|");
+    if (box.dataset.sig === sig) { applyFlash(); return; }
+    box.dataset.sig = sig;
+    if (!top.length) { setChildren(box, h("p", { "class": "muted", text: "No agents yet." })); return; }
+    var max = top.reduce(function (m, a) { return Math.max(m, a.completedCount + a.failedCount); }, 1);
+    var nowSec = Math.floor(Date.now() / 1000);
+    setChildren(box, top.map(function (a, i) {
+      var total = a.completedCount + a.failedCount;
+      var okW = total ? Math.max(a.completedCount / max * 100, a.completedCount ? 3 : 0) : 0;
+      var badW = total ? Math.max(a.failedCount / max * 100, a.failedCount ? 3 : 0) : 0;
+      var stale = (nowSec - a.lastUpdated) > 30 * 86400;
+      return h("a", { "class": "al-row", href: "#/agent/" + a.pubkey, "data-pk": a.pubkey, role: "listitem",
+          "aria-label": "Agent " + shortKey(a.pubkey) + ", reputation " + a.reputationScore + ", " + a.completedCount + " completed, " + a.failedCount + " failed" },
+        h("span", { "class": "al-rank", text: String(i + 1) }),
+        h("span", { "class": "al-id" },
+          h("span", { "class": "al-key", text: shortKey(a.pubkey) }),
+          tierBadge(a._tier)),
+        h("span", { "class": "al-barcell" },
+          h("span", { "class": "al-bar", "aria-hidden": "true" },
+            h("span", { "class": "al-ok", style: "width:" + okW + "%" }),
+            h("span", { "class": "al-bad", style: "width:" + badW + "%" })),
+          h("span", { "class": "al-cap", text: a.completedCount + " completed, " + a.failedCount + " failed" })),
+        h("span", { "class": "al-score" }, h("strong", { text: String(a.reputationScore) }), h("span", { "class": "muted", text: " score" })),
+        h("span", { "class": "al-when" + (stale ? " stale" : ""), text: "Active " + timeAgo(a.lastUpdated) }));
     }));
+    applyFlash();
   }
 
+  // A payment landed for this seller (pubkey or payout address): flash its row.
   function fireNode(pubkey) {
-    var track = $("#highway-track");
-    if (!track || !pubkey) return;
-    var node = Array.prototype.find.call(track.querySelectorAll(".hw-node"), function (n) {
-      var a = state.agents.filter(function (x) { return x.pubkey === n.dataset.pk; })[0];
-      return n.dataset.pk === pubkey || (a && a.authority === pubkey);
+    if (!pubkey) return;
+    state.pendingFlash = state.pendingFlash || {};
+    state.pendingFlash[pubkey] = true; // applied by renderHighway once rows are rebuilt
+  }
+  function applyFlash() {
+    var box = $("#highway-track"), pend = state.pendingFlash;
+    if (!box || !pend) return;
+    Array.prototype.forEach.call(box.querySelectorAll(".al-row"), function (r) {
+      var a = state.agents.filter(function (x) { return x.pubkey === r.dataset.pk; })[0];
+      if (pend[r.dataset.pk] || (a && pend[a.authority])) {
+        r.classList.add("al-flash");
+        setTimeout(function () { r.classList.remove("al-flash"); }, 1800);
+      }
     });
-    if (!node) return;
-    var dot = h("span", { "class": "hw-dot", "aria-hidden": "true" });
-    track.append(dot);
-    var tr = track.getBoundingClientRect(), nr = node.getBoundingClientRect();
-    requestAnimationFrame(function () { dot.style.left = (nr.left - tr.left + track.scrollLeft + nr.width / 2 - 6) + "px"; });
-    setTimeout(function () { dot.remove(); node.classList.add("hw-pulse"); setTimeout(function () { node.classList.remove("hw-pulse"); }, 1300); }, 950);
+    state.pendingFlash = null;
   }
 
   var COLS = [

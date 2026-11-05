@@ -258,3 +258,34 @@ body .nav a{font-weight:550}
   body .card,body .stat,body .hw,body .hw-node,body .tbl-wrap,body .step,body .act li,body .checks li,body .notice,body .ask{background:#fff!important;box-shadow:none!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
   .card::before,.stat::before,.hw::before,.tbl-wrap::before,.step::before{display:none}
 }
+
+
+/* ===== Top agents: one row per agent with a completed / failed bar ===== */
+.al{display:grid;gap:10px}
+body .al-row{
+  display:grid;grid-template-columns:28px minmax(150px,210px) minmax(0,1fr) 92px 130px;gap:16px;align-items:center;
+  padding:14px 18px;border-radius:var(--r-lg);text-decoration:none;color:var(--text);
+  background:var(--glass);border:1px solid var(--glass-line);box-shadow:var(--depth),var(--inset);
+  -webkit-backdrop-filter:blur(18px) saturate(165%);backdrop-filter:blur(18px) saturate(165%);
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+body .al-row:hover{transform:translateY(-2px);box-shadow:var(--depth-hover),var(--inset);border-color:rgba(67,56,202,.35)}
+.al-rank{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.al-id{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.al-key{font-family:var(--mono);font-size:14px;font-weight:650}
+.al-barcell{min-width:0}
+.al-bar{display:flex;height:12px;border-radius:999px;background:rgba(15,23,42,.08);overflow:hidden;box-shadow:inset 0 1px 2px rgba(15,23,42,.12)}
+.al-ok{background:linear-gradient(180deg,#34d399,#16a34a);transition:width .5s ease}
+.al-bad{background:linear-gradient(180deg,#f87171,#b91c1c);transition:width .5s ease}
+.al-cap{display:block;margin-top:5px;font-size:12.5px;color:var(--muted)}
+.al-score{text-align:right;font-variant-numeric:tabular-nums}
+.al-score strong{font-size:20px}
+.al-when{font-size:13px;color:var(--muted);text-align:right}
+.al-when.stale{color:var(--amber);font-weight:600}
+body .al-row.al-flash{animation:alflash 1.8s ease-out}
+@keyframes alflash{0%{box-shadow:0 0 0 0 rgba(34,197,94,.55),var(--depth),var(--inset);border-color:#22c55e}100%{box-shadow:0 0 0 18px rgba(34,197,94,0),var(--depth),var(--inset)}}
+@media (max-width:760px){
+  body .al-row{grid-template-columns:22px 1fr auto;grid-template-areas:"rank id score" "bar bar bar" "when when when";gap:8px 12px;padding:14px}
+  .al-rank{grid-area:rank}.al-id{grid-area:id}.al-score{grid-area:score}
+  .al-barcell{grid-area:bar}.al-when{grid-area:when;text-align:left}
+}
