@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Integrate | Routex402</title>
+  <meta name="description" content="How an agent platform can check Routex402 reputation before paying. Read-only tools, policy gate, buyer-signed updates.">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="stylesheet" href="dashboard.css">
+  <style>
+    .int-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:16px 0 8px}
+    .int pre{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:16px;overflow:auto;font-size:13px;line-height:1.5;margin:12px 0}
+    .int ol,.int ul{padding-left:20px;line-height:1.7}
+    .int h2{margin-top:40px}
+    .notice{border:1px solid #e2e8f0;border-left:4px solid #6d28d9;background:#faf5ff;border-radius:10px;padding:14px 16px;margin:16px 0}
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="topbar"><div class="wrap topbar-in">
+    <a class="brand" href="index.html" aria-label="Routex402 home"><span class="logo" aria-hidden="true"><i></i><i></i></span><span class="brand-name">Routex402</span></a>
+    <nav class="nav" style="display:flex"><a href="index.html">Explorer</a><a href="demo.html">Demo</a><a href="integrate.html">Integrate</a><a href="docs.html">Docs</a></nav>
+  </div></header>
+
+  <main id="main" class="wrap int" style="padding-top:32px;max-width:860px">
+    <p class="eyebrow">For agent platforms</p>
+    <h1 style="font-size:clamp(26px,4vw,38px)">Check a seller's reputation before an agent pays</h1>
+    <p class="lede">Routex402 records verified payment reputation for AI agents on Solana. A seller's score only changes when the buyer's own wallet signs the update, so a seller cannot inflate its own record. This page shows how a platform can use that data before it signs a payment.</p>
+
+    <div class="notice"><strong>Status.</strong> Solana devnet only. The tool shapes below are a proposal, not a published API. This is an independent project: it is not a product of any agent platform and no partnership is implied.</div>
+
+    <h2>What a platform gets</h2>
+    <div class="int-grid">
+      <div class="card"><h3 class="h4">Reputation lookup</h3><p class="muted">Read-only. Score, tier, confidence and five vetting checks for any seller. No signing and no wallet access.</p></div>
+      <div class="card"><h3 class="h4">Policy gate</h3><p class="muted">A proceed or do_not_pay recommendation under a Standard or Strict policy, with plain-language reasons.</p></div>
+      <div class="card"><h3 class="h4">Buyer-signed attestation</h3><p class="muted">After payment, the buyer's wallet signs the reputation update in the same transaction. Verifiable on Solscan.</p></div>
+    </div>
+
+    <h2>The two tools</h2>
+    <ul>
+      <li><code>check_agent_reputation(seller, policy?)</code> takes a seller profile pubkey or payout address and returns the checks and a recommendation.</li>
+      <li><code>list_top_agents(limit?)</code> lists sellers ranked by reputation.</li>
+    </ul>
+    <p class="muted">Example output (illustrative shape):</p>
+<pre>{
+  "seller": "3y5N...mZ3P",
+  "reputationScore": 100,
+  "tier": "Elite",
+  "confidence": "Low",
+  "checks": [
+    { "id": "buyer-independence", "status": "fail",
+      "detail": "45 payments from a single buyer" }
+  ],
+  "policy": "standard",
+  "recommendation": "do_not_pay",
+  "blockReasons": ["45 payments from a single buyer"]
+}</pre>
+
+    <h2>How the flow fits together</h2>
+    <ol>
+      <li>The agent states its intent to pay a seller.</li>
+      <li>It calls <code>check_agent_reputation</code>.</li>
+      <li>A policy decides whether to continue. A high score from a single buyer is blocked.</li>
+      <li>The platform simulates and the user approves, as it normally does.</li>
+      <li>The buyer signs the payment and the reputation update in one transaction.</li>
+    </ol>
+
+    <h2>Try it</h2>
+    <ul>
+      <li><a href="demo.html">Run the live demo</a>. The lookup and policy use live data, the simulation step is mocked, and the final step makes a real devnet payment to a demo seller.</li>
+      <li>Read the source of the read-only App: <a href="https://github.com/msurfx/routex402-aomi-app" target="_blank" rel="noopener">routex402-aomi-app</a> (Rust, built with the Aomi SDK).</li>
+      <li>Verify the program on-chain: <a href="https://solscan.io/account/6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt?cluster=devnet" target="_blank" rel="noopener">program on Solscan</a>.</li>
+    </ul>
+
+    <h2>Open questions</h2>
+    <ul>
+      <li>Can platform tools make outbound HTTPS calls, and what is the tool timeout? The reputation API can take up to about 50 seconds to respond when the free-tier host is asleep.</li>
+      <li>Can an integration target Solana devnet data?</li>
+      <li>Where should a reputation check sit relative to simulation and signing?</li>
+    </ul>
+
+    <h2>Limits you should know about</h2>
+    <ul>
+      <li>Devnet data with a small number of demo agents. Scores are evidence, not a guarantee.</li>
+      <li>For some agents the distinct buyer count was not recorded, so confidence shows Unknown.</li>
+      <li>The contract has not had an external audit.</li>
+    </ul>
+  </main>
+
+  <footer class="footer"><div class="wrap footer-in"><span>Routex402 runs on Solana devnet.</span><span class="footer-links"><a href="index.html">Explorer</a><a href="demo.html">Demo</a><a href="docs.html">Docs</a></span></div></footer>
+</body>
+</html>
