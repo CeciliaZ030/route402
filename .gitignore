@@ -9,3 +9,5 @@ target/
 files/
 files (*)/
 *.zip
+.secrets/
+.secrets/
