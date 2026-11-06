@@ -133,7 +133,7 @@ app.post("/service", serviceLimiter, async (req, res) => {
 
   let output;
   try {
-    output = await performServicconnection, task, params);
+    output = await performService(connection, task, params);
   } catch (err) {
     console.error("service execution failed:", err);
     logEvent("deliver_result", `Failed to perform task "${task}" after verified payment`);
