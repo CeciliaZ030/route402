@@ -1,0 +1,105 @@
+diff --git a/frontend/app.js b/frontend/app.js
+index e4b5445..c5d5484 100644
+--- a/frontend/app.js
++++ b/frontend/app.js
+@@ -311,18 +311,30 @@
+     ]);
+   }
+ 
++  var STEP_TAGS = {
++    "receive_request": { label: "Request", cls: "tag-request" },
++    "402_challenge": { label: "402", cls: "tag-402" },
++    "verify_payment": { label: "Verify", cls: "tag-verify" },
++    "deliver_result": { label: "Deliver", cls: "tag-deliver" },
++    "reputation_update": { label: "Reputation", cls: "tag-rep" }
++  };
+   function renderActivity() {
+     var ul = $("#activity");
+     if (!state.events.length) { setChildren(ul, h("li", null, h("span", { "class": "muted", text: "No activity yet. Run a purchase to see it live." }))); return; }
+-    var sig = state.events.slice(0, 8).map(evKey).join("|");
++    var sig = state.events.slice(0, 12).map(evKey).join("|");
+     if (ul.dataset.sig === sig) return;
+     ul.dataset.sig = sig;
+-    setChildren(ul, state.events.slice(0, 8).map(activityRow));
++    setChildren(ul, state.events.slice(0, 12).map(activityRow));
+   }
+   function activityRow(e) {
+     var s = evSig(e), t = evTime(e), who = evSeller(e);
+-    return h("li", null,
+-      h("span", null, evText(e), who && B58.test(who) ? " (" + shortKey(who) + ")" : ""),
++    var step = e.step || "";
++    var tag = STEP_TAGS[step];
++    return h("li", { "data-step": step },
++      h("span", null,
++        tag ? h("span", { "class": "step-tag " + tag.cls, text: tag.label }) : "",
++        evText(e),
++        who && B58.test(who) ? " (" + shortKey(who) + ")" : ""),
+       h("span", { "class": "when" }, t ? timeAgo(Math.floor(t)) + " " : "", s ? ext(solscanTx(s), "View on Solscan") : ""));
+   }
+ 
+diff --git a/frontend/dashboard.css b/frontend/dashboard.css
+index 764616e..3d27eda 100644
+--- a/frontend/dashboard.css
++++ b/frontend/dashboard.css
+@@ -145,6 +145,21 @@ input[type=search],select{width:100%;font:inherit;padding:10px 12px;border:1px s
+ .act{list-style:none;margin:0;padding:0;display:grid;gap:var(--s2)}
+ .act li{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:var(--s3) var(--s4);display:flex;justify-content:space-between;gap:var(--s3);align-items:center;flex-wrap:wrap}
+ .act .when{color:var(--muted);font-size:13px}
++/* feed step tags */
++.feed-legend{display:flex;gap:var(--s2);flex-wrap:wrap;margin-bottom:var(--s4)}
++.feed-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:3px 10px;border-radius:6px;display:inline-block}
++.tag-request{background:#ede9fe;color:#6d28d9}
++.tag-402{background:#fef3c7;color:#92400e}
++.tag-verify{background:#dbeafe;color:#1d4ed8}
++.tag-deliver{background:#dcfce7;color:#15803d}
++.tag-rep{background:#fce7f3;color:#be185d}
++.feed .step-tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:5px;margin-right:6px;white-space:nowrap}
++.feed li{font-size:14px;border-left:3px solid var(--border);transition:border-color .2s}
++.feed li[data-step="receive_request"]{border-left-color:#6d28d9}
++.feed li[data-step="402_challenge"]{border-left-color:#f59e0b}
++.feed li[data-step="verify_payment"]{border-left-color:#3b82f6}
++.feed li[data-step="deliver_result"]{border-left-color:#22c55e}
++.feed li[data-step="reputation_update"]{border-left-color:#ec4899}
+ 
+ /* agent page */
+ .crumb{display:inline-block;margin:var(--s5) 0 var(--s3);text-decoration:none;font-weight:600}
+diff --git a/frontend/index.html b/frontend/index.html
+index 2ba3f96..a13b4b4 100644
+--- a/frontend/index.html
++++ b/frontend/index.html
+@@ -113,6 +113,21 @@
+         </div>
+       </section>
+ 
++      <section class="section alt" aria-labelledby="act-title">
++        <div class="wrap">
++          <h2 id="act-title">Live protocol feed</h2>
++          <p class="muted sec-sub">Real-time x402 flow: every request, payment, verification and delivery logged as it happens. Each step links to Solscan.</p>
++          <div class="feed-legend">
++            <span class="feed-tag tag-request">Request</span>
++            <span class="feed-tag tag-402">402</span>
++            <span class="feed-tag tag-verify">Verify</span>
++            <span class="feed-tag tag-deliver">Deliver</span>
++            <span class="feed-tag tag-rep">Reputation</span>
++          </div>
++          <ul class="act feed" id="activity" aria-live="polite"></ul>
++        </div>
++      </section>
++
+       <section class="section alt" id="how" aria-labelledby="how-title">
+         <div class="wrap">
+           <h2 id="how-title">How vetting works</h2>
+@@ -150,13 +165,6 @@
+         </div>
+       </section>
+ 
+-      <section class="section alt" aria-labelledby="act-title">
+-        <div class="wrap">
+-          <h2 id="act-title">Live activity</h2>
+-          <p class="muted sec-sub">Latest steps of the payment loop. Open a row to verify it on Solscan.</p>
+-          <ul class="act" id="activity" aria-live="polite"></ul>
+-        </div>
+-      </section>
+     </div>
+ 
+     <!-- AGENT VIEW -->

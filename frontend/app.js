@@ -311,18 +311,30 @@
     ]);
   }
 
+  var STEP_TAGS = {
+    "receive_request": { label: "Request", cls: "tag-request" },
+    "402_challenge": { label: "402", cls: "tag-402" },
+    "verify_payment": { label: "Verify", cls: "tag-verify" },
+    "deliver_result": { label: "Deliver", cls: "tag-deliver" },
+    "reputation_update": { label: "Reputation", cls: "tag-rep" }
+  };
   function renderActivity() {
     var ul = $("#activity");
     if (!state.events.length) { setChildren(ul, h("li", null, h("span", { "class": "muted", text: "No activity yet. Run a purchase to see it live." }))); return; }
-    var sig = state.events.slice(0, 8).map(evKey).join("|");
+    var sig = state.events.slice(0, 12).map(evKey).join("|");
     if (ul.dataset.sig === sig) return;
     ul.dataset.sig = sig;
-    setChildren(ul, state.events.slice(0, 8).map(activityRow));
+    setChildren(ul, state.events.slice(0, 12).map(activityRow));
   }
   function activityRow(e) {
     var s = evSig(e), t = evTime(e), who = evSeller(e);
-    return h("li", null,
-      h("span", null, evText(e), who && B58.test(who) ? " (" + shortKey(who) + ")" : ""),
+    var step = e.step || "";
+    var tag = STEP_TAGS[step];
+    return h("li", { "data-step": step },
+      h("span", null,
+        tag ? h("span", { "class": "step-tag " + tag.cls, text: tag.label }) : "",
+        evText(e),
+        who && B58.test(who) ? " (" + shortKey(who) + ")" : ""),
       h("span", { "class": "when" }, t ? timeAgo(Math.floor(t)) + " " : "", s ? ext(solscanTx(s), "View on Solscan") : ""));
   }
 
