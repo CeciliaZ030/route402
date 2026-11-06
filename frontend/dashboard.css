@@ -409,3 +409,53 @@ body .al-row.al-flash{animation:alflash 1.8s ease-out}
   :root:not([data-theme="light"]) .b-elite{background:rgba(129,140,248,.12);color:#a5b4fc;border-color:rgba(129,140,248,.2)}
   :root:not([data-theme="light"]) .b-high{background:rgba(74,222,128,.1);color:#4ade80;border-color:rgba(74,222,128,.15)}
 }
+
+/* ===== Dark mode complete fix ===== */
+:root[data-theme="dark"] body{background:#0a0e1a;color:#f1f5f9}
+:root[data-theme="dark"] body::before{background:radial-gradient(900px 520px at 8% -6%,rgba(99,102,241,.15),transparent 62%),radial-gradient(820px 500px at 96% 2%,rgba(14,116,144,.1),transparent 62%),radial-gradient(900px 620px at 72% 104%,rgba(21,128,61,.08),transparent 62%),linear-gradient(180deg,#0a0e1a 0%,#0f1629 100%)}
+:root[data-theme="dark"] h1,:root[data-theme="dark"] h2,:root[data-theme="dark"] h3,:root[data-theme="dark"] .h3,:root[data-theme="dark"] .h4{color:#f1f5f9}
+:root[data-theme="dark"] .muted,:root[data-theme="dark"] .stat-l,:root[data-theme="dark"] .al-cap,:root[data-theme="dark"] .al-when,:root[data-theme="dark"] .al-rank{color:#94a3b8}
+:root[data-theme="dark"] .stat-v,:root[data-theme="dark"] .al-score strong{color:#f1f5f9}
+:root[data-theme="dark"] .al-key{color:#e2e8f0}
+:root[data-theme="dark"] .lede{color:#94a3b8}
+:root[data-theme="dark"] .topbar{background:rgba(17,24,39,.82);border-bottom-color:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .brand{color:#f1f5f9}
+:root[data-theme="dark"] .nav a{color:#cbd5e1}
+:root[data-theme="dark"] .nav a:hover{color:#a5b4fc}
+:root[data-theme="dark"] .logo{background:rgba(30,41,59,.6);border-color:rgba(255,255,255,.1)}
+:root[data-theme="dark"] .card,:root[data-theme="dark"] .stat,:root[data-theme="dark"] .hw,:root[data-theme="dark"] .tbl-wrap,:root[data-theme="dark"] .act li,:root[data-theme="dark"] .checks li{background:rgba(17,24,39,.65);border-color:rgba(255,255,255,.08);box-shadow:0 1px 1px rgba(0,0,0,.2),0 6px 16px rgba(0,0,0,.25)}
+:root[data-theme="dark"] .card::before,:root[data-theme="dark"] .stat::before{background:linear-gradient(135deg,rgba(255,255,255,.06) 0%,transparent 38%)}
+:root[data-theme="dark"] body .al-row{background:rgba(17,24,39,.65);border-color:rgba(255,255,255,.08);box-shadow:0 1px 1px rgba(0,0,0,.2),0 6px 16px rgba(0,0,0,.25)}
+:root[data-theme="dark"] body .al-row:hover{border-color:rgba(129,140,248,.35)}
+:root[data-theme="dark"] .al-bar{background:linear-gradient(180deg,#0f172a,#1e293b);box-shadow:inset 0 2px 3px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.04)}
+:root[data-theme="dark"] input[type=search],:root[data-theme="dark"] select{background:rgba(30,41,59,.6);border-color:rgba(255,255,255,.1);color:#f1f5f9}
+:root[data-theme="dark"] .btn-ghost{background:rgba(30,41,59,.6);border-color:rgba(255,255,255,.1);color:#f1f5f9}
+:root[data-theme="dark"] .tbl th{background:rgba(255,255,255,.03);color:#94a3b8}
+:root[data-theme="dark"] .tbl td{color:#e2e8f0;border-bottom-color:rgba(255,255,255,.06)}
+:root[data-theme="dark"] .tbl tbody tr:hover{background:rgba(129,140,248,.08)}
+:root[data-theme="dark"] .banner{background:rgba(251,191,36,.08);color:#fbbf24;border-bottom-color:rgba(251,191,36,.15)}
+:root[data-theme="dark"] .footer{background:rgba(17,24,39,.5);border-top-color:rgba(255,255,255,.06);color:#94a3b8}
+:root[data-theme="dark"] .note{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.15);color:#fbbf24}
+:root[data-theme="dark"] .demo-msg.ok{color:#4ade80}
+:root[data-theme="dark"] .b-elite{background:rgba(129,140,248,.12);color:#a5b4fc;border-color:rgba(129,140,248,.2)}
+:root[data-theme="dark"] .b-high,:root[data-theme="dark"] .b-trusted,:root[data-theme="dark"] .b-pass{background:rgba(74,222,128,.1);color:#4ade80;border-color:rgba(74,222,128,.15)}
+:root[data-theme="dark"] .b-caution{background:rgba(251,191,36,.1);color:#fbbf24}
+:root[data-theme="dark"] .b-fail{background:rgba(248,113,113,.1);color:#f87171}
+:root[data-theme="dark"] .b-new,:root[data-theme="dark"] .b-unknown,:root[data-theme="dark"] .b-unrated{background:rgba(156,163,175,.1);color:#9ca3af}
+:root[data-theme="dark"] .eyebrow{background:rgba(129,140,248,.12);border-color:rgba(129,140,248,.2);color:#a5b4fc}
+:root[data-theme="dark"] .hero{background:transparent}
+:root[data-theme="dark"] .section.alt{background:transparent}
+:root[data-theme="dark"] .crumb{color:#a5b4fc}
+:root[data-theme="dark"] a{color:#a5b4fc}
+:root[data-theme="dark"] .kv dt{color:#94a3b8}
+:root[data-theme="dark"] .kv dd{color:#f1f5f9}
+:root[data-theme="dark"] .sum .big{color:#f1f5f9}
+:root[data-theme="dark"] .ag-head h1{color:#f1f5f9}
+
+/* ===== Status light flash on transaction ===== */
+.al-light.flash{animation:lightflash .8s ease-out}
+@keyframes lightflash{
+  0%{box-shadow:0 0 0 0 rgba(34,197,94,.9),0 0 20px rgba(34,197,94,.8);transform:scale(1.4)}
+  50%{box-shadow:0 0 0 10px rgba(34,197,94,.3),0 0 30px rgba(34,197,94,.4);transform:scale(1.2)}
+  100%{box-shadow:0 0 0 3px rgba(34,197,94,.22),0 0 10px rgba(34,197,94,.75);transform:scale(1)}
+}
