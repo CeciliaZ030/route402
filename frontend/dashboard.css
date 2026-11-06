@@ -459,3 +459,23 @@ body .al-row.al-flash{animation:alflash 1.8s ease-out}
   50%{box-shadow:0 0 0 10px rgba(34,197,94,.3),0 0 30px rgba(34,197,94,.4);transform:scale(1.2)}
   100%{box-shadow:0 0 0 3px rgba(34,197,94,.22),0 0 10px rgba(34,197,94,.75);transform:scale(1)}
 }
+
+/* ===== Force road lanes to match Gemini mockup ===== */
+body .al-bar{
+  position:relative;display:flex;height:18px;border-radius:10px;
+  background:linear-gradient(180deg,#1a2332,#2a3548);
+  box-shadow:inset 0 2px 4px rgba(0,0,0,.5),0 1px 0 rgba(255,255,255,.05);
+  overflow:visible;
+}
+body .al-bar::after{
+  content:"";position:absolute;left:14px;right:14px;top:50%;height:2px;margin-top:-1px;z-index:0;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.5) 0 10px,transparent 10px 20px);
+}
+body .al-ok{position:relative;z-index:1;height:100%;border-radius:10px 0 0 10px;background:linear-gradient(180deg,#4ade80,#16a34a);box-shadow:0 0 12px rgba(34,197,94,.5),0 0 24px rgba(34,197,94,.15)}
+body .al-bad{position:relative;z-index:1;height:100%;border-radius:0;background:linear-gradient(180deg,#fb7185,#e11d48);box-shadow:0 0 8px rgba(225,29,72,.4)}
+body .al-light{width:14px;height:14px}
+body .al-light.on{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.2),0 0 14px rgba(34,197,94,.7),0 0 28px rgba(34,197,94,.25)}
+body .al-score strong{font-size:22px;font-weight:800}
+body .badge{font-size:12px;padding:4px 12px;border-radius:8px;font-weight:700;border:1px solid transparent}
+body .b-elite{border-color:rgba(67,56,202,.25)}
+body .b-high{border-color:rgba(34,197,94,.2)}
