@@ -172,20 +172,34 @@
       var age = (nowSec - a.lastUpdated) / 86400;
       var stale = age > 30;
       return h("a", { "class": "al-row", href: "#/agent/" + a.pubkey, "data-pk": a.pubkey, role: "listitem",
-          "aria-label": "Agent " + shortKey(a.pubkey) + ", reputation " + a.reputationScore + ", " + a.completedCount + " completed, " + a.failedCount + " failed" },
-        h("span", { "class": "al-rank", text: String(i + 1) }),
-        h("span", { "class": "al-id" },
-          h("span", { "class": "al-light " + (age <= 7 ? "on" : age <= 30 ? "mid" : "off"), "aria-hidden": "true" }),
-          h("span", { "class": "al-key", text: shortKey(a.pubkey) }),
-          tierBadge(a._tier)),
+          "aria-label": "Agent " + shortKey(a.pubkey) + ", reputation " + a.reputationScore },
+        h("span", { "class": "al-light " + (age <= 7 ? "on" : age <= 30 ? "mid" : "off"), "aria-hidden": "true" }),
+        h("span", { "class": "al-rank", text: "#" + String(i + 1) }),
+        h("span", { "class": "al-name" },
+          h("strong", { "class": "al-key", text: shortKey(a.pubkey) }),
+          tierBadge(a._tier),
+          confBadge(a._conf)),
+        h("span", { "class": "al-score" }, h("strong", { text: String(a.reputationScore) }), h("span", { "class": "muted", text: " score" })),
+        h("span", { "class": "al-when" + (stale ? " stale" : ""), text: "Active " + timeAgo(a.lastUpdated) }),
         h("span", { "class": "al-barcell" },
           h("span", { "class": "al-bar", "aria-hidden": "true" },
             h("span", { "class": "al-ok", style: "width:" + okW + "%" }),
-            h("span", { "class": "al-bad", style: "width:" + badW + "%" })),
-          h("span", { "class": "al-cap", text: a.completedCount + " completed, " + a.failedCount + " failed" })),
-        h("span", { "class": "al-score" }, h("strong", { text: String(a.reputationScore) }), h("span", { "class": "muted", text: " score" })),
-        h("span", { "class": "al-when" + (stale ? " stale" : ""), text: "Active " + timeAgo(a.lastUpdated) }));
-    }));
+            h("span", { "class": "al-bad", style: "width:" + badW + "%" }))));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     applyFlash();
   }
 

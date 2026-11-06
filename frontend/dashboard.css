@@ -479,3 +479,23 @@ body .al-score strong{font-size:22px;font-weight:800}
 body .badge{font-size:12px;padding:4px 12px;border-radius:8px;font-weight:700;border:1px solid transparent}
 body .b-elite{border-color:rgba(67,56,202,.25)}
 body .b-high{border-color:rgba(34,197,94,.2)}
+
+/* ===== Gemini-style two-row agent strips ===== */
+body .al-row{
+  display:grid;
+  grid-template-columns:16px auto 1fr auto auto;
+  grid-template-rows:auto auto;
+  grid-template-areas:"light rank name score when" "light rank bar bar bar";
+  gap:6px 12px;align-items:center;padding:16px 20px;
+}
+body .al-row .al-light{grid-area:light}
+body .al-row .al-rank{grid-area:rank}
+body .al-row .al-name{grid-area:name;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+body .al-row .al-score{grid-area:score;text-align:right}
+body .al-row .al-when{grid-area:when;text-align:right}
+body .al-row .al-barcell{grid-area:bar;min-width:0}
+body .al-bar{height:14px;border-radius:8px}
+body .al-cap{display:none}
+@media (max-width:760px){
+  body .al-row{grid-template-columns:16px auto 1fr auto;grid-template-areas:"light rank name score" "bar bar bar bar" "when when when when";gap:6px 10px;padding:14px}
+}
