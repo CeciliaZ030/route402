@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-import { Connection } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import { PORT, RPC_URL, USDC_MINT, SERVICE_PRICE } from "./config.js";
 import { buildPaymentRequirements, verifyPayment } from "./x402.js";
@@ -13,15 +13,13 @@ import {
   getProtocolConfig,
 } from "./anchorClient.js";
 import { performService, isSupportedTask, SUPPORTED_TASKS } from "./service.js";
+import { createApiV1Router } from "./api-v1.js";
+import idl from "./idl/agent_economy.json" with { type: "json" };
+
+const PROGRAM_ID = new PublicKey("6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt");
 
 const app = express();
 
-// Security note (audit-driven fix): CORS restricted to actual frontend
-// origins. Rate limiting on /service closes the forced-record_failure SOL
-// burn / reputation-griefing path an unauthenticated caller could otherwise
-// loop indefinitely.
-// localhost entries are for local frontend dev only; harmless in prod because
-// CORS stops browser requests — it does not stop curl/server-side callers.
 const ALLOWED_ORIGINS: (string | RegExp)[] = [
   "https://routex402.xyz",
   "https://www.routex402.xyz",
@@ -56,10 +54,6 @@ const sellerTokenAccount = (
   )
 ).address.toBase58();
 
-// Self-heal the on-chain profile at boot: creates it if missing, or migrates
-// it (close + re-init, counters reset) if it predates the 2026-07 account
-// layout change. Runs before the server accepts traffic so /agents and
-// pay_and_record never see a stale-layout own-profile.
 const profileState = await ensureSellerProfile(sellerAuthority, SERVICE_PRICE);
 if (profileState !== "exists") {
   console.warn(
@@ -67,7 +61,6 @@ if (profileState !== "exists") {
   );
 }
 
-// Fee rate comes from the on-chain ProtocolConfig; 0 if not yet initialized.
 const protocolConfig = await getProtocolConfig(sellerAuthority);
 const protocolFeeBps = protocolConfig?.protocolFeeBps ?? 0;
 console.log(`Protocol fee: ${protocolFeeBps} bps${protocolConfig ? "" : " (ProtocolConfig not initialized)"}`);
@@ -84,7 +77,7 @@ interface ActivityEvent {
 const events: ActivityEvent[] = [];
 let eventId = 0;
 function logEvent(step: string, message: string, signature?: string) {
-  events.unshift({ id: eventId++, timestamp: new Date().toISOString(), step, message, signature });
+  even.unshift({ id: eventId++, timestamp: new Date().toISOString(), step, message, signature });
   if (events.length > 30) events.length = 30;
   console.log(`[${step}] ${message}`);
 }
@@ -93,31 +86,17 @@ app.get("/events", (_req, res) => {
   res.json(events);
 });
 
-/**
- * Loop A, steps 1-6, unchanged. Loop B changed: the seller no longer calls
- * record_payment itself (see security note in the Anchor program — that
- * instruction is now buyer-signed). The seller just tells the buyer it's
- * their turn to submit the reputation update, via sellerAuthority in the
- * response body.
- */
 app.post("/service", serviceLimiter, async (req, res) => {
   const { paymentSignature, task: requestedTask, params } = req.body ?? {};
-
-  // The request now carries a real input: which task to perform. Defaults to
-  // network-report so older clients that POST an empty body still get real
-  // work rather than an error.
   const task = requestedTask ?? "network-report";
   if (!isSupportedTask(task)) {
     logEvent("receive_request", `Rejected unknown task "${String(task).slice(0, 40)}"`);
-    return res.status(400).json({
-      error: "unsupported task",
-      supportedTasks: SUPPORTED_TASKS,
-    });
+    return res.status(400).json({ error: "unsupported task", supportedTasks: SUPPORTED_TASKS });
   }
 
   if (!paymentSignature) {
     logEvent("receive_request", "Buyer requested service, no payment attached");
-    logEvent("402_challenge", `Sent 402 — price ${buildPaymentRequirements(sellerTokenAccount, sellerAuthority.publicKey.toBase58(), protocolFeeBps).amount} base units`);
+    logEvent("402_challenge", `Sent 402 — price ${buildPaymentRequirements(sellerTokenAccount, selrAuthority.publicKey.toBase58(), protocolFeeBps).amount} base units`);
     return res.status(402).json({
       error: "payment required",
       paymentRequirements: buildPaymentRequirements(sellerTokenAccount, sellerAuthority.publicKey.toBase58(), protocolFeeBps),
@@ -137,7 +116,7 @@ app.post("/service", serviceLimiter, async (req, res) => {
     logEvent("verify_payment", `Failed — ${result.reason}`, paymentSignature);
     try {
       await recordFailure(sellerAuthority);
-      logEvent("reputation_update", "Recorded failure on-chain (seller self-reported)");
+      logEvent("repuon_update", "Recorded failure on-chain (seller self-reported)");
     } catch (err) {
       console.error("record_failure failed:", err);
       logEvent("reputation_update", "Failed to record failure on-chain");
@@ -152,12 +131,9 @@ app.post("/service", serviceLimiter, async (req, res) => {
   logEvent("verify_payment", `Verified — ${result.amountPaid} base units received`, paymentSignature);
   seenSignatures.add(paymentSignature);
 
-  // The paid work happens here — real computation over live network data,
-  // not a canned string. If it fails after payment verified, that's the
-  // seller's failure to deliver: refuse cleanly and self-report on-chain.
   let output;
   try {
-    output = await performService(connection, task, params);
+    output = await performServicconnection, task, params);
   } catch (err) {
     console.error("service execution failed:", err);
     logEvent("deliver_result", `Failed to perform task "${task}" after verified payment`);
@@ -179,10 +155,9 @@ app.post("/service", serviceLimiter, async (req, res) => {
 
   return res.status(200).json({
     task,
-    result: output.summary,
+    result: output.summar
     data: output.data,
     generatedAt: output.data.generatedAt,
-    // The buyer needs these two to submit the reputation update itself.
     sellerAuthority: sellerAuthority.publicKey.toBase58(),
     amountPaid: result.amountPaid,
   });
@@ -198,6 +173,17 @@ app.get("/agents", async (_req, res) => {
     res.status(500).json({ error: "could not load agent stats" });
   }
 });
+
+app.use("/api/v1", createApiV1Router({
+  connection,
+  programId: PROGRAM_ID,
+  idl,
+  usdcMint: USDC_MINT,
+  listAgents: async () => {
+    const profiles = await listSellerProfiles(sellerAuthority);
+    return profiles.sort((a: any, b: any) => b.reputationScore - a.reputationScore);
+  },
+}));
 
 app.listen(PORT, () => {
   console.log(`Seller agent listening on http://localhost:${PORT}`);
