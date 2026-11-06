@@ -461,6 +461,47 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
 
+/* ---------- price oracle widget ---------- */
+(function () {
+  var SELLER_URL = window.SELLER_URL || "http://localhost:4021";
+  var priceEl = document.getElementById("oracle-price");
+  var slotEl = document.getElementById("oracle-slot");
+  var epochEl = document.getElementById("oracle-epoch");
+  var timeEl = document.getElementById("oracle-time");
+  var refreshBtn = document.getElementById("oracle-refresh");
+  if (!priceEl) return;
+
+  function fetchPrice() {
+    if (refreshBtn) { refreshBtn.disabled = true; refreshBtn.textContent = "..."; }
+    fetch(SELLER_URL + "/preview/price")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.data) {
+          priceEl.textContent = "$" + d.data.price.toFixed(2);
+          priceEl.classList.remove("skel");
+          if (slotEl) { slotEl.textContent = "Slot " + d.data.slot; slotEl.classList.remove("skel"); }
+          if (epochEl) { epochEl.textContent = "Epoch " + d.data.epoch; epochEl.classList.remove("skel"); }
+          if (timeEl) {
+            var t = new Date(d.data.generatedAt);
+            timeEl.textContent = t.toLocaleTimeString();
+            timeEl.classList.remove("skel");
+          }
+        }
+      })
+      .catch(function () {
+        priceEl.textContent = "—";
+        priceEl.classList.remove("skel");
+      })
+      .then(function () {
+        if (refreshBtn) { refreshBtn.disabled = false; refreshBtn.textContent = "Refresh"; }
+      });
+  }
+
+  fetchPrice();
+  setInterval(fetchPrice, 15000);
+  if (refreshBtn) refreshBtn.addEventListener("click", fetchPrice);
+})();
+
 /* dark mode toggle */
 const dmBtn=document.createElement("button");
 dmBtn.className="btn btn-ghost btn-sm";

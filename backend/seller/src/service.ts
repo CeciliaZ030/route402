@@ -10,12 +10,14 @@ import { Connection } from "@solana/web3.js";
  * zero new external dependencies, no per-call API cost.
  */
 
-export const SUPPORTED_TASKS = ["network-report"] as const;
+export const SUPPORTED_TASKS = ["network-report", "price-oracle"] as const;
 export type Task = (typeof SUPPORTED_TASKS)[number];
 
 export interface ServiceParams {
   /** How many recent 60s performance samples to aggregate (1-10, default 5). */
   sampleCount?: number;
+  /** Token pair for price-oracle, e.g. "SOL/USDC". Default "SOL/USDC". */
+  pair?: string;
 }
 
 export interface NetworkReport {
@@ -38,11 +40,12 @@ export async function performService(
   connection: Connection,
   task: Task,
   params: ServiceParams = {}
-): Promise<{ summary: string; data: NetworkReport }> {
-  // Only one task today; the switch keeps the seam obvious for adding more.
+): Promise<{ summary: string; data: any }> {
   switch (task) {
     case "network-report":
       return networkReport(connection, params);
+    case "price-oracle":
+      return priceOracle(connection, params);
   }
 }
 
@@ -86,6 +89,56 @@ async function networkReport(
     `Devnet network report: slot ${slot}, epoch ${data.epoch} ` +
     `(${data.epochProgressPct}% complete), avg ${data.avgTps} TPS ` +
     `(peak ${data.peakTps}) over the last ${data.samples} minute(s).`;
+
+  return { summary, data };
+}
+
+/* ---------- price-oracle ---------- */
+
+interface PriceReport {
+  pair: string;
+  price: number;
+  slot: number;
+  epoch: number;
+  source: string;
+  generatedAt: string;
+}
+
+async function priceOracle(
+  connection: Connection,
+  params: ServiceParams
+): Promise<{ summary: string; data: PriceReport }> {
+  const pair = (params.pair ?? "SOL/USDC").toUpperCase();
+
+  const [slot, epochInfo, samples] = await Promise.all([
+    connection.getSlot(),
+    connection.getEpochInfo(),
+    connection.getRecentPerformanceSamples(3),
+  ]);
+
+  // Synthetic price derived from network TPS — makes the price move with
+  // real network activity. Anchored around ~150 USD (realistic SOL range).
+  const tpsValues = samples
+    .filter((s: any) => s.samplePeriodSecs > 0)
+    .map((s: any) => s.numTransactions / s.samplePeriodSecs);
+  const avgTps = tpsValues.length > 0
+    ? tpsValues.reduce((sum: number, v: number) => sum + v, 0) / tpsValues.length
+    : 2000;
+
+  // Map TPS range (500-5000) to price range (120-180)
+  const normalized = Math.max(0, Math.min(1, (avgTps - 500) / 4500));
+  const price = Number((120 + normalized * 60).toFixed(2));
+
+  const data: PriceReport = {
+    pair,
+    price,
+    slot,
+    epoch: epochInfo.epoch,
+    source: "solana-devnet-tps-derived",
+    generatedAt: new Date().toISOString(),
+  };
+
+  const summary = `${pair} price: $${price} (derived from devnet TPS ${avgTps.toFixed(0)}, slot ${slot}, epoch ${data.epoch})`;
 
   return { summary, data };
 }

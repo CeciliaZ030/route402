@@ -60,6 +60,24 @@ a:hover{color:var(--primary-hover)}
 .demo-actions{display:flex;gap:var(--s3);flex-wrap:wrap}
 .demo-msg{min-height:22px;font-size:14px;font-weight:600}
 .demo-msg.ok{color:var(--green)}.demo-msg.err{color:var(--red)}
+/* oracle card */
+.oracle-card{overflow:hidden}
+.oracle-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s4)}
+.oracle-pair{display:flex;align-items:center;gap:var(--s2)}
+.oracle-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.oracle-dot.green{background:var(--green-bright);box-shadow:0 0 6px var(--green-bright)}
+.oracle-label{font-size:18px;font-weight:700;letter-spacing:.02em}
+.oracle-badge{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--green);background:var(--green-soft);padding:2px 8px;border-radius:6px}
+.btn-sm{padding:6px 14px;min-height:32px;font-size:13px;border-radius:8px;background:var(--primary-soft);color:var(--primary);border:1px solid transparent}
+.btn-sm:hover{background:var(--primary);color:#fff}
+.oracle-body{padding:var(--s4) 0}
+.oracle-price{font-size:clamp(36px,6vw,56px);font-weight:800;letter-spacing:-.02em;line-height:1;margin-bottom:var(--s3)}
+.oracle-price.skel{height:56px;width:200px;border-radius:var(--r);background:var(--border);animation:pulse 1.5s infinite}
+.oracle-meta{display:flex;gap:var(--s5);flex-wrap:wrap}
+.oracle-meta-item{font-size:14px;color:var(--muted);font-family:var(--mono)}
+.oracle-meta-item.skel{height:18px;width:100px;border-radius:6px;background:var(--border);animation:pulse 1.5s infinite}
+.oracle-footer{border-top:1px solid var(--border);padding-top:var(--s3);margin-top:var(--s3)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .btn{display:inline-flex;align-items:center;justify-content:center;padding:11px 18px;border-radius:10px;font:inherit;font-weight:600;border:1px solid transparent;cursor:pointer;text-decoration:none;min-height:44px}
 .btn-primary{background:var(--primary);color:#fff}
 .btn-primary:hover{background:var(--primary-hover);color:#fff}

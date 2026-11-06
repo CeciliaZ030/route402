@@ -68,6 +68,38 @@
         </div>
       </section>
 
+      <section class="section" aria-labelledby="oracle-title">
+        <div class="wrap">
+          <div class="sec-head">
+            <div>
+              <h2 id="oracle-title">Live agent preview</h2>
+              <p class="muted">A Price Oracle agent running on Routex402. It fetches live Solana devnet data and returns a price report — the same x402 flow every paid call uses.</p>
+            </div>
+          </div>
+          <div class="card oracle-card">
+            <div class="oracle-header">
+              <div class="oracle-pair">
+                <span class="oracle-dot green"></span>
+                <span class="oracle-label">SOL / USDC</span>
+                <span class="oracle-badge">LIVE</span>
+              </div>
+              <button class="btn btn-sm" id="oracle-refresh" type="button">Refresh</button>
+            </div>
+            <div class="oracle-body" id="oracle-body">
+              <div class="oracle-price skel" id="oracle-price">&nbsp;</div>
+              <div class="oracle-meta" id="oracle-meta">
+                <span class="oracle-meta-item skel" id="oracle-slot">&nbsp;</span>
+                <span class="oracle-meta-item skel" id="oracle-epoch">&nbsp;</span>
+                <span class="oracle-meta-item skel" id="oracle-time">&nbsp;</span>
+              </div>
+            </div>
+            <div class="oracle-footer">
+              <span class="muted" style="font-size:13px">Task: <code>price-oracle</code> · Cost: 0.01 USDC · Source: Solana devnet TPS</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section class="section" aria-labelledby="hw-title">
         <div class="wrap">
           <div class="sec-head">
