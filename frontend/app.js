@@ -185,6 +185,7 @@
           h("span", { "class": "al-bar", "aria-hidden": "true" },
             h("span", { "class": "al-ok", style: "width:" + okW + "%" }),
             h("span", { "class": "al-bad", style: "width:" + badW + "%" }))));
+    }));
 
 
 
