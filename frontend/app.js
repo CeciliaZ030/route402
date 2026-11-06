@@ -204,7 +204,6 @@
         r.classList.add("al-flash");
         var light = r.querySelector(".al-light"); if (light) { light.classList.add("flash"); setTimeout(function () { light.classList.remove("flash"); }, 800); }
         setTimeout(function () { r.classList.remove("al-flash"); }, 1800);
-        var light = r.querySelector(".al-light"); if (light) { light.classList.add("flash"); setTimeout(function () { light.classList.remove("flash"); }, 800); }
       }
     });
     state.pendingFlash = null;
