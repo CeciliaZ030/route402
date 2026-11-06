@@ -202,6 +202,7 @@
       var a = state.agents.filter(function (x) { return x.pubkey === r.dataset.pk; })[0];
       if (pend[r.dataset.pk] || (a && pend[a.authority])) {
         r.classList.add("al-flash");
+        var light = r.querySelector(".al-light"); if (light) { light.classList.add("flash"); setTimeout(function () { light.classList.remove("flash"); }, 800); }
         setTimeout(function () { r.classList.remove("al-flash"); }, 1800);
         var light = r.querySelector(".al-light"); if (light) { light.classList.add("flash"); setTimeout(function () { light.classList.remove("flash"); }, 800); }
       }
