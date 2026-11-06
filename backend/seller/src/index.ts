@@ -77,7 +77,7 @@ interface ActivityEvent {
 const events: ActivityEvent[] = [];
 let eventId = 0;
 function logEvent(step: string, message: string, signature?: string) {
-  even.unshift({ id: eventId++, timestamp: new Date().toISOString(), step, message, signature });
+  events.unshift({ id: eventId++, timestamp: new Date().toISOString(), step, message, signature });
   if (events.length > 30) events.length = 30;
   console.log(`[${step}] ${message}`);
 }
@@ -96,7 +96,7 @@ app.post("/service", serviceLimiter, async (req, res) => {
 
   if (!paymentSignature) {
     logEvent("receive_request", "Buyer requested service, no payment attached");
-    logEvent("402_challenge", `Sent 402 — price ${buildPaymentRequirements(sellerTokenAccount, selrAuthority.publicKey.toBase58(), protocolFeeBps).amount} base units`);
+    logEvent("402_challenge", `Sent 402 — price ${buildPaymentRequirements(sellerTokenAccount, sellerAuthority.publicKey.toBase58(), protocolFeeBps).amount} base units`);
     return res.status(402).json({
       error: "payment required",
       paymentRequirements: buildPaymentRequirements(sellerTokenAccount, sellerAuthority.publicKey.toBase58(), protocolFeeBps),
@@ -116,7 +116,7 @@ app.post("/service", serviceLimiter, async (req, res) => {
     logEvent("verify_payment", `Failed — ${result.reason}`, paymentSignature);
     try {
       await recordFailure(sellerAuthority);
-      logEvent("repuon_update", "Recorded failure on-chain (seller self-reported)");
+      logEvent("reputation_update", "Recorded failure on-chain (seller self-reported)");
     } catch (err) {
       console.error("record_failure failed:", err);
       logEvent("reputation_update", "Failed to record failure on-chain");
@@ -155,7 +155,7 @@ app.post("/service", serviceLimiter, async (req, res) => {
 
   return res.status(200).json({
     task,
-    result: output.summar
+    result: output.summary,
     data: output.data,
     generatedAt: output.data.generatedAt,
     sellerAuthority: sellerAuthority.publicKey.toBase58(),
