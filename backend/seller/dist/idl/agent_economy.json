@@ -1,0 +1,702 @@
+{
+    "address": "6pp5jDS23FBcwtqe8pTiBJw3osyHZQPENr9bK3P62vjt",
+    "metadata": {
+        "name": "agent_economy",
+        "version": "0.1.0",
+        "spec": "0.1.0",
+        "description": "Seller reputation program for the agent economy hackathon build"
+    },
+    "instructions": [
+        {
+            "name": "close_seller",
+            "docs": [
+                "Closes a seller profile and refunds rent to its authority. Needed for",
+                "migration: profiles created under the old, smaller account layout",
+                "cannot deserialize after upgrade and must be closed and re-initialized.",
+                "Authority-signed, so only a seller can close its own profile."
+            ],
+            "discriminator": [
+                41,
+                0,
+                67,
+                250,
+                136,
+                2,
+                246,
+                225
+            ],
+            "accounts": [
+                {
+                    "name": "authority",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "seller_profile",
+                    "docs": [
+                        "The profile to close. Deliberately unchecked: old-layout accounts",
+                        "cannot deserialize as SellerProfile, but the seeds constraint still",
+                        "cryptographically binds this to the canonical PDA for the signing",
+                        "authority — no other account can be passed.",
+                        "is only possible because the program owns the account."
+                    ],
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    115,
+                                    101,
+                                    108,
+                                    108,
+                                    101,
+                                    114
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "authority"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "initialize_config",
+            "docs": [
+                "One-time protocol setup: who administers the program, where fees go,",
+                "and the fee rate. Singleton PDA — can only ever be initialized once."
+            ],
+            "discriminator": [
+                208,
+                127,
+                21,
+                1,
+                194,
+                190,
+                196,
+                70
+            ],
+            "accounts": [
+                {
+                    "name": "admin",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "config",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    99,
+                                    111,
+                                    110,
+                                    102,
+                                    105,
+                                    103
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "treasury_token_account",
+                    "docs": [
+                        "The token account protocol fees accumulate in. Stored by address and",
+                        "enforced on every pay_and_record, so fees can't be redirected later."
+                    ]
+                },
+                {
+                    "name": "system_program",
+                    "address": "11111111111111111111111111111111"
+                }
+            ],
+            "args": [
+                {
+                    "name": "protocol_fee_bps",
+                    "type": "u16"
+                }
+            ]
+        },
+        {
+            "name": "initialize_seller",
+            "docs": [
+                "Creates a SellerProfile PDA for an agent that wants to sell a service.",
+                "price is denominated in the smallest unit of the token used",
+                "(6 decimals, so 1 token = 1_000_000)."
+            ],
+            "discriminator": [
+                39,
+                130,
+                77,
+                197,
+                219,
+                88,
+                122,
+                252
+            ],
+            "accounts": [
+                {
+                    "name": "authority",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "seller_profile",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    115,
+                                    101,
+                                    108,
+                                    108,
+                                    101,
+                                    114
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "authority"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "system_program",
+                    "address": "11111111111111111111111111111111"
+                }
+            ],
+            "args": [
+                {
+                    "name": "price",
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "pay_and_record",
+            "docs": [
+                "The core instruction: pay the seller AND record reputation, atomically.",
+                "",
+                "This replaces the old two-step flow (raw SPL transfer, then a separate",
+                "record_payment call) whose recorded amount was never verified against",
+                "any real transfer — reputation was effectively a free-write counter.",
+                "Here the token movement happens via CPI *inside* this instruction, so",
+                "the amount recorded is provably the amount that moved, and the protocol",
+                "fee is enforced by the program rather than being optional client",
+                "behavior.",
+                "",
+                "The buyer signs (they're moving their own tokens), which also makes the",
+                "reputation record buyer-attested. A buyer≠seller check closes the",
+                "single-wallet self-vouch; the per-pair BuyerSellerLink PDA lets the",
+                "scoring down-weight repeat counterparties, so two-wallet wash trading",
+                "is diminished rather than linear."
+            ],
+            "discriminator": [
+                14,
+                182,
+                137,
+                104,
+                92,
+                23,
+                138,
+                230
+            ],
+            "accounts": [
+                {
+                    "name": "buyer",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "seller",
+                    "docs": [
+                        "The seller's wallet — deliberately NOT a signer. It's only used to",
+                        "derive/validate which SellerProfile PDA this payment applies to, and",
+                        "as the required owner of the destination token account.",
+                        "seller_token_account owner constraint below."
+                    ]
+                },
+                {
+                    "name": "seller_profile",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    115,
+                                    101,
+                                    108,
+                                    108,
+                                    101,
+                                    114
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "seller"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "buyer_seller_link",
+                    "docs": [
+                        "Tracks that this buyer has paid this seller before, so repeat",
+                        "transactions can be down-weighted in the score."
+                    ],
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    108,
+                                    105,
+                                    110,
+                                    107
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "seller"
+                            },
+                            {
+                                "kind": "account",
+                                "path": "buyer"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "config",
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    99,
+                                    111,
+                                    110,
+                                    102,
+                                    105,
+                                    103
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "mint"
+                },
+                {
+                    "name": "buyer_token_account",
+                    "writable": true
+                },
+                {
+                    "name": "seller_token_account",
+                    "writable": true
+                },
+                {
+                    "name": "treasury_token_account",
+                    "writable": true
+                },
+                {
+                    "name": "token_program",
+                    "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+                },
+                {
+                    "name": "system_program",
+                    "address": "11111111111111111111111111111111"
+                }
+            ],
+            "args": [
+                {
+                    "name": "amount",
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "record_failure",
+            "docs": [
+                "Stays seller-signed. A seller self-reporting its OWN failures only",
+                "ever hurts its score — there's no incentive to fake it, so the",
+                "self-attestation risk that applied to success-recording doesn't apply."
+            ],
+            "discriminator": [
+                86,
+                94,
+                231,
+                2,
+                95,
+                43,
+                53,
+                161
+            ],
+            "accounts": [
+                {
+                    "name": "authority",
+                    "writable": true,
+                    "signer": true,
+                    "relations": [
+                        "seller_profile"
+                    ]
+                },
+                {
+                    "name": "seller_profile",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    115,
+                                    101,
+                                    108,
+                                    108,
+                                    101,
+                                    114
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "authority"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "args": []
+        },
+        {
+            "name": "record_payment",
+            "docs": [
+                "Admin-gated legacy instruction, kept only for seeding demo history.",
+                "",
+                "SECURITY NOTE: in earlier versions this was publicly callable",
+                "(buyer-signed) and verified no payment — meaning reputation was",
+                "writable by anyone with no money moving (the audit's #1 finding).",
+                "Live traffic now goes through pay_and_record, where the transfer and",
+                "the record are one atomic instruction. This path remains solely so the",
+                "protocol admin can seed synthetic demo agents, and any history written",
+                "through it is by definition synthetic — the frontend labels it as such."
+            ],
+            "discriminator": [
+                226,
+                154,
+                10,
+                27,
+                9,
+                14,
+                148,
+                137
+            ],
+            "accounts": [
+                {
+                    "name": "admin",
+                    "docs": [
+                        "Only the protocol admin may write unverified history (for demo",
+                        "seeding) — see the security note on the instruction."
+                    ],
+                    "signer": true,
+                    "relations": [
+                        "config"
+                    ]
+                },
+                {
+                    "name": "config",
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    99,
+                                    111,
+                                    110,
+                                    102,
+                                    105,
+                                    103
+                                ]
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "seller",
+                    "docs": [
+                        "The seller's wallet, used only to derive the profile PDA."
+                    ]
+                },
+                {
+                    "name": "seller_profile",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    115,
+                                    101,
+                                    108,
+                                    108,
+                                    101,
+                                    114
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "seller"
+                            }
+                        ]
+                    }
+                }
+            ],
+            "args": [
+                {
+                    "name": "amount",
+                    "type": "u64"
+                }
+            ]
+        },
+        {
+            "name": "update_fee",
+            "docs": [
+                "Admin-only fee adjustment. The treasury and admin are fixed at init;",
+                "only the rate is tunable, and only within the hard cap."
+            ],
+            "discriminator": [
+                232,
+                253,
+                195,
+                247,
+                148,
+                212,
+                73,
+                222
+            ],
+            "accounts": [
+                {
+                    "name": "admin",
+                    "signer": true,
+                    "relations": [
+                        "config"
+                    ]
+                },
+                {
+                    "name": "config",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [
+                            {
+                                "kind": "const",
+                                "value": [
+                                    99,
+                                    111,
+                                    110,
+                                    102,
+                                    105,
+                                    103
+                                ]
+                            }
+                        ]
+                    }
+                }
+            ],
+            "args": [
+                {
+                    "name": "protocol_fee_bps",
+                    "type": "u16"
+                }
+            ]
+        }
+    ],
+    "accounts": [
+        {
+            "name": "BuyerSellerLink",
+            "discriminator": [
+                152,
+                109,
+                126,
+                56,
+                1,
+                197,
+                154,
+                203
+            ]
+        },
+        {
+            "name": "ProtocolConfig",
+            "discriminator": [
+                207,
+                91,
+                250,
+                28,
+                152,
+                179,
+                215,
+                209
+            ]
+        },
+        {
+            "name": "SellerProfile",
+            "discriminator": [
+                96,
+                227,
+                91,
+                129,
+                3,
+                158,
+                255,
+                21
+            ]
+        }
+    ],
+    "errors": [
+        {
+            "code": 6000,
+            "name": "FeeTooHigh",
+            "msg": "Protocol fee exceeds the maximum allowed (10%)"
+        },
+        {
+            "code": 6001,
+            "name": "ZeroAmount",
+            "msg": "Payment amount must be greater than zero"
+        },
+        {
+            "code": 6002,
+            "name": "SelfPayment",
+            "msg": "Buyer and seller must be different wallets"
+        },
+        {
+            "code": 6003,
+            "name": "TokenAccountOwnerMismatch",
+            "msg": "Token account is not owned by the expected wallet"
+        },
+        {
+            "code": 6004,
+            "name": "MintMismatch",
+            "msg": "Token account mint does not match the payment mint"
+        },
+        {
+            "code": 6005,
+            "name": "TreasuryMismatch",
+            "msg": "Treasury token account does not match protocol config"
+        },
+        {
+            "code": 6006,
+            "name": "AdminOnly",
+            "msg": "Only the protocol admin may call this instruction"
+        }
+    ],
+    "types": [
+        {
+            "name": "BuyerSellerLink",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "tx_count",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "bump",
+                        "type": "u8"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ProtocolConfig",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "admin",
+                        "type": "pubkey"
+                    },
+                    {
+                        "name": "treasury_token_account",
+                        "type": "pubkey"
+                    },
+                    {
+                        "name": "protocol_fee_bps",
+                        "type": "u16"
+                    },
+                    {
+                        "name": "bump",
+                        "type": "u8"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "SellerProfile",
+            "type": {
+                "kind": "struct",
+                "fields": [
+                    {
+                        "name": "authority",
+                        "type": "pubkey"
+                    },
+                    {
+                        "name": "price",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "reputation_score",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "completed_count",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "failed_count",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "total_volume",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "distinct_buyers",
+                        "docs": [
+                            "Number of unique buyer wallets that have ever paid this seller."
+                        ],
+                        "type": "u64"
+                    },
+                    {
+                        "name": "weighted_completed",
+                        "docs": [
+                            "Completion weight in hundredths — see compute_reputation."
+                        ],
+                        "type": "u64"
+                    },
+                    {
+                        "name": "last_updated",
+                        "docs": [
+                            "Unix timestamp of the last reputation-affecting event. Readers apply",
+                            "recency decay from this at display time."
+                        ],
+                        "type": "i64"
+                    },
+                    {
+                        "name": "bump",
+                        "type": "u8"
+                    }
+                ]
+            }
+        }
+    ]
+}
