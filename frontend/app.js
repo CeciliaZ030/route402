@@ -444,3 +444,14 @@
   window.__rx = { state: state, route: route, poll: poll };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 })();
+
+/* dark mode toggle */
+const dmBtn=document.createElement("button");
+dmBtn.className="btn btn-ghost btn-sm";
+dmBtn.textContent="🌙";
+dmBtn.style.cssText="font-size:18px;padding:6px 10px;min-height:0";
+dmBtn.onclick=()=>{const d=document.documentElement;const next=d.getAttribute("data-theme")==="dark"?"light":"dark";d.setAttribute("data-theme",next);localStorage.setItem("theme",next);dmBtn.textContent=next==="dark"?"☀️":"🌙"};
+const saved=localStorage.getItem("theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");
+document.documentElement.setAttribute("data-theme",saved);
+if(saved==="dark")dmBtn.textContent="☀️";
+document.querySelector(".nav")?.prepend(dmBtn);
