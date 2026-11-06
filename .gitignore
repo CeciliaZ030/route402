@@ -11,3 +11,4 @@ files (*)/
 *.zip
 .secrets/
 .secrets/
+backend/buyer/buyer-keypair.json
